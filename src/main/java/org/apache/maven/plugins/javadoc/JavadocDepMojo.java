@@ -20,7 +20,9 @@ import static org.apache.maven.plugins.javadoc.JavadocDepUtil.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -68,16 +70,17 @@ public class JavadocDepMojo extends JavadocReport {
   @Parameter(defaultValue="${reactorProjects}", readonly=true)
   private List<MavenProject> reactorProjects;
 
-  /**
-   * Regular expression to match GroupIds for inclusion. Empty String indicates
-   * include everything (default).
-   */
-  @Parameter(property="matchGroupIds", defaultValue="")
-  protected String matchGroupIds;
+  @Parameter
+  private List<UrlOverride> urlOverrrides;
 
   @Override
   public void execute() throws MojoExecutionException, MojoFailureException {
-    final UnpackDependencies dependencyMojo = new UnpackDependencies(project, session, remoteRepositories, reactorProjects, matchGroupIds);
+    final Map<String,String> dependencyToUrl = new HashMap<>();
+    if (urlOverrrides != null)
+      for (final UrlOverride urlOverrride : urlOverrrides)
+        dependencyToUrl.put(urlOverrride.getDependency(), urlOverrride.getUrl());
+
+    final UnpackDependencies dependencyMojo = new UnpackDependencies(dependencyToUrl, getLog(), project, session, remoteRepositories, reactorProjects);
 
     dependencyMojo.setArchiverManager(archiverManager);
     setField(AbstractDependencyFilterMojo.class, dependencyMojo, "artifactResolver", artifactResolver);
@@ -87,6 +90,8 @@ public class JavadocDepMojo extends JavadocReport {
     setField(AbstractDependencyFilterMojo.class, dependencyMojo, "artifactHandlerManager", artifactHandlerManager);
     dependencyMojo.execute();
 
+    setField(AbstractJavadocMojo.class, this, "detectLinks", false);
+    setField(AbstractJavadocMojo.class, this, "detectOfflineLinks", false);
     if (dependencyMojo.getOfflineLinks().size() > 0) {
       JavadocDepUtil.<OfflineLink[]>setField(AbstractJavadocMojo.class, this, "offlineLinks", (v) -> {
         final List<OfflineLink> offlineLinks;

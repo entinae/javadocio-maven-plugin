@@ -21,9 +21,10 @@ import static org.apache.maven.plugins.javadoc.JavadocDepUtil.*;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
@@ -33,6 +34,7 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.dependency.AbstractDependencyMojo;
 import org.apache.maven.plugins.dependency.fromDependencies.UnpackDependenciesMojo;
 import org.apache.maven.plugins.dependency.utils.DependencyStatusSets;
@@ -77,20 +79,45 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     return getModelUrl(new File(parentPath, parent.getArtifactId() + "-" + parent.getVersion() + ".pom"));
   }
 
-  private final MavenProject project;
-  private final String matchGroupIds;
+  private static void checkPackageList(final File destDir) throws IOException {
+    final File packageListFile = new File(destDir, "package-list");
+    if (!packageListFile.exists()) {
+      final File elementListFile = new File(destDir, "element-list");
+      if (elementListFile.exists())
+        FileUtils.copyFile(elementListFile, packageListFile);
+    }
+  }
 
-  UnpackDependencies(final MavenProject project, final MavenSession session, final List<ArtifactRepository> remoteRepositories, final List<MavenProject> reactorProjects, final String matchGroupIds) {
+  private static boolean exists(final String url) {
+    try {
+      new URL(url).openStream().close();
+      return true;
+    }
+    catch (final IOException e) {
+      return false;
+    }
+  }
+
+  private final List<OfflineLink> offlineLinks = new ArrayList<>();
+  private final Map<String,String> dependencyToUrl;
+  private final MavenProject project;
+
+  UnpackDependencies(final Map<String,String> dependencyToUrl, final Log log, final MavenProject project, final MavenSession session, final List<ArtifactRepository> remoteRepositories, final List<MavenProject> reactorProjects) {
+    setLog(log);
+    this.dependencyToUrl = dependencyToUrl;
     this.project = project;
-    this.matchGroupIds = matchGroupIds;
     this.session = session;
     setField(AbstractDependencyMojo.class, this, "remoteRepositories", remoteRepositories);
     this.reactorProjects = reactorProjects;
 
     this.failOnMissingClassifierArtifact = false;
     this.classifier = "javadoc";
-    this.outputDirectory = new File(getProject().getBuild().getDirectory(), "javadoc2");
+    this.outputDirectory = new File(getProject().getBuild().getDirectory(), "javadocdep");
     this.useSubDirectoryPerArtifact = true;
+  }
+
+  List<OfflineLink> getOfflineLinks() {
+    return this.offlineLinks;
   }
 
   @Override
@@ -98,34 +125,42 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     return project;
   }
 
-  private File getDest(final Artifact artifact) {
+  private File getDestDir(final Artifact artifact) {
     return DependencyUtil.getFormattedOutputDirectory(useSubDirectoryPerScope, useSubDirectoryPerType, useSubDirectoryPerArtifact, useRepositoryLayout, stripVersion, outputDirectory, artifact);
+  }
+
+  private String getUrl(final Artifact artifact) {
+    final String url = dependencyToUrl.get(artifact.getGroupId() + ":" + artifact.getArtifactId());
+    if (url == null)
+      return getModelUrl(new File(artifact.getFile().toString().replace("-javadoc.jar", ".pom"))) + "apidocs/";
+
+    return url.replace("@version", artifact.getVersion());
+  }
+
+  private String getCheckUrl(final Artifact artifact) {
+    final String url = getUrl(artifact);
+    if (!exists(url))
+      getLog().warn("Error fetching link for dependency [" + artifact.getGroupId() + ":" + artifact.getArtifactId() + "]: " + url);
+
+    return url;
+  }
+
+  private static String getJavadocIoUrl(final Artifact artifact) {
+    return "https://www.javadoc.io/doc/" + artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getVersion().replace("-SNAPSHOT", "");
   }
 
   @Override
   protected DependencyStatusSets getDependencySets(final boolean stopOnFailure) throws MojoExecutionException {
     try {
       final DependencyStatusSets dependencyStatusSets = super.getDependencySets(stopOnFailure);
-      final Iterator<Artifact> iterator = dependencyStatusSets.getResolvedDependencies().iterator();
-      while (iterator.hasNext()) {
-        final Artifact artifact = iterator.next();
-        if (matchGroupIds.length() > 0 && !artifact.getGroupId().matches(matchGroupIds)) {
-          iterator.remove();
-          continue;
-        }
-
-        final File file = new File(artifact.getFile().toString().replace("-javadoc.jar", ".pom"));
-        final String url = getModelUrl(file);
-        final File destDir = getDest(artifact);
-        final File packageListFile = new File(destDir, "package-list");
-        if (!packageListFile.exists()) {
-          final File elementListFile = new File(destDir, "element-list");
-          if (elementListFile.exists())
-            FileUtils.copyFile(elementListFile, packageListFile);
-        }
+      for (final Artifact artifact : dependencyStatusSets.getResolvedDependencies()) {
+        final File destDir = getDestDir(artifact);
+        checkPackageList(destDir);
 
         final OfflineLink offlineLink = new OfflineLink();
-        offlineLink.setUrl(url + "apidocs/");
+        final String url = getJavadocIoUrl(artifact);
+
+        offlineLink.setUrl(url);
         offlineLink.setLocation(destDir.getAbsolutePath());
         offlineLinks.add(offlineLink);
       }
@@ -135,11 +170,5 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     catch (final IOException e) {
       throw new MojoExecutionException(e.getMessage(), e);
     }
-  }
-
-  private final List<OfflineLink> offlineLinks = new ArrayList<>();
-
-  List<OfflineLink> getOfflineLinks() {
-    return this.offlineLinks;
   }
 }
