@@ -70,6 +70,9 @@ public class JavadocDepMojo extends JavadocReport {
   @Parameter(defaultValue="${reactorProjects}", readonly=true)
   private List<MavenProject> reactorProjects;
 
+  @Parameter(defaultValue="${settings.offline}", required=true, readonly=true)
+  protected boolean offline;
+
   @Parameter
   private List<UrlOverride> urlOverrrides;
 
@@ -80,7 +83,7 @@ public class JavadocDepMojo extends JavadocReport {
       for (final UrlOverride urlOverrride : urlOverrrides)
         dependencyToUrl.put(urlOverrride.getDependency(), urlOverrride.getUrl());
 
-    final UnpackDependencies dependencyMojo = new UnpackDependencies(dependencyToUrl, getLog(), project, session, remoteRepositories, reactorProjects);
+    final UnpackDependencies dependencyMojo = new UnpackDependencies(dependencyToUrl, getLog(), offline, project, session, remoteRepositories, reactorProjects);
 
     dependencyMojo.setArchiverManager(archiverManager);
     setField(AbstractDependencyFilterMojo.class, dependencyMojo, "artifactResolver", artifactResolver);

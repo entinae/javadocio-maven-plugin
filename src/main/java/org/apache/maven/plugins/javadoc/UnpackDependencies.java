@@ -19,20 +19,16 @@ package org.apache.maven.plugins.javadoc;
 import static org.apache.maven.plugins.javadoc.JavadocDepUtil.*;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Parent;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.dependency.AbstractDependencyMojo;
@@ -41,70 +37,22 @@ import org.apache.maven.plugins.dependency.utils.DependencyStatusSets;
 import org.apache.maven.plugins.dependency.utils.DependencyUtil;
 import org.apache.maven.plugins.javadoc.options.OfflineLink;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 class UnpackDependencies extends UnpackDependenciesMojo {
-  private static String checkSlash(final String url) {
-    return url.charAt(url.length() - 1) != '/' ? url + "/" : url;
+  static {
+    System.setProperty("http.agent", "");
   }
 
-  private static String getModelUrl(final File pomFile) {
-    try {
-      final MavenXpp3Reader reader = new MavenXpp3Reader();
-      final Model model = reader.read(new FileReader(pomFile));
-      final String url = model.getUrl();
-      if (url != null)
-        return checkSlash(url);
-
-      final String id = getId(model);
-      final String artifactDir = pomFile.getParent();
-      final String localRepoPath = artifactDir.substring(0, artifactDir.length() - id.length());
-      final String parentUrl = getParentPath(localRepoPath, model.getParent());
-      return checkSlash(parentUrl) + model.getArtifactId() + "/";
-    }
-    catch (final IOException | XmlPullParserException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
-  private static String getId(final Model model) {
-    final String groupId = model.getGroupId() != null ? model.getGroupId() : model.getParent().getGroupId();
-    final String version = model.getVersion() != null ? model.getVersion() : model.getParent().getVersion();
-    return groupId + ":" + model.getArtifactId() + ":" + version;
-  }
-
-  private static String getParentPath(final String localRepoPath, final Parent parent) {
-    final String artifactPath = parent.getGroupId().replace('.', '/') + "/" + parent.getArtifactId() + "/" + parent.getVersion() + "/";
-    final String parentPath = localRepoPath + artifactPath;
-    return getModelUrl(new File(parentPath, parent.getArtifactId() + "-" + parent.getVersion() + ".pom"));
-  }
-
-  private static void checkPackageList(final File destDir) throws IOException {
-    final File packageListFile = new File(destDir, "package-list");
-    if (!packageListFile.exists()) {
-      final File elementListFile = new File(destDir, "element-list");
-      if (elementListFile.exists())
-        FileUtils.copyFile(elementListFile, packageListFile);
-    }
-  }
-
-  private static boolean exists(final String url) {
-    try {
-      new URL(url).openStream().close();
-      return true;
-    }
-    catch (final IOException e) {
-      return false;
-    }
-  }
-
+  private final Set<Artifact> resolvedArtifacts = new HashSet<>();
   private final List<OfflineLink> offlineLinks = new ArrayList<>();
   private final Map<String,String> dependencyToUrl;
+  private final boolean offline;
   private final MavenProject project;
 
-  UnpackDependencies(final Map<String,String> dependencyToUrl, final Log log, final MavenProject project, final MavenSession session, final List<ArtifactRepository> remoteRepositories, final List<MavenProject> reactorProjects) {
+  UnpackDependencies(final Map<String,String> dependencyToUrl, final Log log, final boolean offline, final MavenProject project, final MavenSession session, final List<ArtifactRepository> remoteRepositories, final List<MavenProject> reactorProjects) {
     setLog(log);
     this.dependencyToUrl = dependencyToUrl;
+    this.offline = offline;
     this.project = project;
     this.session = session;
     setField(AbstractDependencyMojo.class, this, "remoteRepositories", remoteRepositories);
@@ -139,33 +87,42 @@ class UnpackDependencies extends UnpackDependenciesMojo {
 
   private String getCheckUrl(final Artifact artifact) {
     final String url = getUrl(artifact);
-    if (!exists(url))
+    if (!offline && !exists(url))
       getLog().warn("Error fetching link for dependency [" + artifact.getGroupId() + ":" + artifact.getArtifactId() + "]: " + url);
 
     return url;
   }
 
-  private static String getJavadocIoUrl(final Artifact artifact) {
-    return "https://www.javadoc.io/doc/" + artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getVersion().replace("-SNAPSHOT", "");
+  private String getJavadocIoUrl(final Artifact artifact) {
+    final String version = artifact.getVersion().replace("-SNAPSHOT", "");
+    final String url ="https://static.javadoc.io/" + artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + version;
+    if (!offline && !exists(url + "index.html"))
+      exists("https://www.javadoc.io/doc/" + artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + version);
+
+    return url;
   }
 
   @Override
   protected DependencyStatusSets getDependencySets(final boolean stopOnFailure) throws MojoExecutionException {
+    final DependencyStatusSets dependencyStatusSets = super.getDependencySets(stopOnFailure);
+    for (final Artifact artifact : dependencyStatusSets.getResolvedDependencies()) {
+      resolvedArtifacts.add(artifact);
+
+      final OfflineLink offlineLink = new OfflineLink();
+      offlineLink.setUrl(getJavadocIoUrl(artifact));
+      offlineLink.setLocation(getDestDir(artifact).getAbsolutePath());
+      offlineLinks.add(offlineLink);
+    }
+
+    return dependencyStatusSets;
+  }
+
+  @Override
+  protected void doExecute() throws MojoExecutionException {
+    super.doExecute();
     try {
-      final DependencyStatusSets dependencyStatusSets = super.getDependencySets(stopOnFailure);
-      for (final Artifact artifact : dependencyStatusSets.getResolvedDependencies()) {
-        final File destDir = getDestDir(artifact);
-        checkPackageList(destDir);
-
-        final OfflineLink offlineLink = new OfflineLink();
-        final String url = getJavadocIoUrl(artifact);
-
-        offlineLink.setUrl(url);
-        offlineLink.setLocation(destDir.getAbsolutePath());
-        offlineLinks.add(offlineLink);
-      }
-
-      return dependencyStatusSets;
+      for (final Artifact artifact : resolvedArtifacts)
+        checkPackageList(getDestDir(artifact));
     }
     catch (final IOException e) {
       throw new MojoExecutionException(e.getMessage(), e);
