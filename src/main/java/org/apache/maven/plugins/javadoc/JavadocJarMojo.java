@@ -15,6 +15,7 @@
  */
 
 package org.apache.maven.plugins.javadoc;
+
 import static org.apache.maven.plugins.javadoc.MojoUtil.*;
 
 import java.util.List;
@@ -35,9 +36,9 @@ import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
 import org.apache.maven.shared.repository.RepositoryManager;
 import org.codehaus.plexus.archiver.manager.ArchiverManager;
 
-@Mojo(name="javadoc", requiresDependencyResolution=ResolutionScope.TEST, defaultPhase=LifecyclePhase.GENERATE_SOURCES, threadSafe=true)
+@Mojo(name="jar", requiresDependencyResolution=ResolutionScope.TEST, defaultPhase=LifecyclePhase.GENERATE_SOURCES, threadSafe=true)
 @Execute(phase=LifecyclePhase.GENERATE_SOURCES)
-public class JavadocMojo extends JavadocReport {
+public class JavadocJarMojo extends JavadocJar {
   @Component
   private ArchiverManager archiverManager;
 

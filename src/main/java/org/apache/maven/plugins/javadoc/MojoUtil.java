@@ -21,16 +21,33 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
+import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.javadoc.options.OfflineLink;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuilder;
+import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
+import org.apache.maven.shared.repository.RepositoryManager;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
-final class JavadocDepUtil {
+final class MojoUtil {
   private static String checkSlash(final String url) {
     return url.charAt(url.length() - 1) != '/' ? url + "/" : url;
   }
@@ -86,7 +103,7 @@ final class JavadocDepUtil {
   }
 
   @SuppressWarnings("unchecked")
-  static <T>void setField(final Class<?> cls, final AbstractMojo mojo, final String name, final Function<T,T> value) {
+  private static <T>void setField(final Class<?> cls, final AbstractMojo mojo, final String name, final Function<T,T> value) {
     try {
       final Field field = cls.getDeclaredField(name);
       field.setAccessible(true);
@@ -108,6 +125,34 @@ final class JavadocDepUtil {
     }
   }
 
-  private JavadocDepUtil() {
+  static void invoke(final AbstractMojo mojo, final List<UrlOverride> urlOverrrides, final boolean offline, final MavenProject project, final MavenSession session, final List<ArtifactRepository> remoteRepositories, final List<MavenProject> reactorProjects, final ArchiverManager archiverManager, final ArtifactResolver artifactResolver, final DependencyResolver dependencyResolver, final RepositoryManager repositoryManager, final ProjectBuilder projectBuilder, final ArtifactHandlerManager artifactHandlerManager) throws MojoExecutionException, MojoFailureException {
+    final Map<String,String> dependencyToUrl = new HashMap<>();
+    if (urlOverrrides != null)
+      for (final UrlOverride urlOverrride : urlOverrrides)
+        dependencyToUrl.put(urlOverrride.getDependency(), urlOverrride.getUrl());
+
+    final UnpackDependencies dependencyMojo = new UnpackDependencies(dependencyToUrl, mojo.getLog(), offline, project, session, project.getRemoteArtifactRepositories(), reactorProjects, archiverManager, artifactResolver, dependencyResolver, repositoryManager, projectBuilder, artifactHandlerManager);
+    dependencyMojo.execute();
+
+    setField(AbstractJavadocMojo.class, mojo, "detectLinks", false);
+    setField(AbstractJavadocMojo.class, mojo, "detectOfflineLinks", false);
+    if (dependencyMojo.getOfflineLinks().size() > 0) {
+      MojoUtil.<OfflineLink[]>setField(AbstractJavadocMojo.class, mojo, "offlineLinks", (v) -> {
+        final List<OfflineLink> offlineLinks;
+        if (v != null && v.length > 0) {
+          offlineLinks = new ArrayList<>();
+          Collections.addAll(offlineLinks, v);
+          offlineLinks.addAll(dependencyMojo.getOfflineLinks());
+        }
+        else {
+          offlineLinks = dependencyMojo.getOfflineLinks();
+        }
+
+        return offlineLinks.toArray(new OfflineLink[offlineLinks.size()]);
+      });
+    }
+  }
+
+  private MojoUtil() {
   }
 }

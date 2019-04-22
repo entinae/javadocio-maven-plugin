@@ -16,7 +16,7 @@
 
 package org.apache.maven.plugins.javadoc;
 
-import static org.apache.maven.plugins.javadoc.JavadocDepUtil.*;
+import static org.apache.maven.plugins.javadoc.MojoUtil.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,16 +27,23 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.dependency.AbstractDependencyMojo;
+import org.apache.maven.plugins.dependency.fromDependencies.AbstractDependencyFilterMojo;
 import org.apache.maven.plugins.dependency.fromDependencies.UnpackDependenciesMojo;
 import org.apache.maven.plugins.dependency.utils.DependencyStatusSets;
 import org.apache.maven.plugins.dependency.utils.DependencyUtil;
 import org.apache.maven.plugins.javadoc.options.OfflineLink;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuilder;
+import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
+import org.apache.maven.shared.repository.RepositoryManager;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
 
 class UnpackDependencies extends UnpackDependenciesMojo {
   static {
@@ -49,7 +56,7 @@ class UnpackDependencies extends UnpackDependenciesMojo {
   private final boolean offline;
   private final MavenProject project;
 
-  UnpackDependencies(final Map<String,String> dependencyToUrl, final Log log, final boolean offline, final MavenProject project, final MavenSession session, final List<ArtifactRepository> remoteRepositories, final List<MavenProject> reactorProjects) {
+  UnpackDependencies(final Map<String,String> dependencyToUrl, final Log log, final boolean offline, final MavenProject project, final MavenSession session, final List<ArtifactRepository> remoteRepositories, final List<MavenProject> reactorProjects, final ArchiverManager archiverManager, final ArtifactResolver artifactResolver, final DependencyResolver dependencyResolver, final RepositoryManager repositoryManager, final ProjectBuilder projectBuilder, final ArtifactHandlerManager artifactHandlerManager) {
     setLog(log);
     this.dependencyToUrl = dependencyToUrl;
     this.offline = offline;
@@ -57,6 +64,13 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     this.session = session;
     setField(AbstractDependencyMojo.class, this, "remoteRepositories", remoteRepositories);
     this.reactorProjects = reactorProjects;
+
+    setArchiverManager(archiverManager);
+    setField(AbstractDependencyFilterMojo.class, this, "artifactResolver", artifactResolver);
+    setField(AbstractDependencyFilterMojo.class, this, "dependencyResolver", dependencyResolver);
+    setField(AbstractDependencyFilterMojo.class, this, "repositoryManager", repositoryManager);
+    setField(AbstractDependencyFilterMojo.class, this, "projectBuilder", projectBuilder);
+    setField(AbstractDependencyFilterMojo.class, this, "artifactHandlerManager", artifactHandlerManager);
 
     this.failOnMissingClassifierArtifact = false;
     this.classifier = "javadoc";
