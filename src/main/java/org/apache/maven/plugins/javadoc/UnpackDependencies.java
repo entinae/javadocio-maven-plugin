@@ -75,6 +75,7 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     this.failOnMissingClassifierArtifact = false;
     this.classifier = "javadoc";
     this.outputDirectory = new File(getProject().getBuild().getDirectory(), "javadocdep");
+    this.markersDirectory = new File(getProject().getBuild().getDirectory(), "dependency-maven-plugin-markers");
     this.useSubDirectoryPerArtifact = true;
   }
 
