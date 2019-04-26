@@ -15,9 +15,10 @@
  */
 
 package org.apache.maven.plugins.javadoc;
-import static org.apache.maven.plugins.javadoc.MojoUtil.*;
-
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -28,8 +29,11 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.plugins.javadoc.options.OfflineLink;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
+import org.apache.maven.reporting.MavenReportException;
+import org.apache.maven.settings.Settings;
 import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
 import org.apache.maven.shared.repository.RepositoryManager;
@@ -37,37 +41,61 @@ import org.codehaus.plexus.archiver.manager.ArchiverManager;
 
 @Mojo(name="javadoc", requiresDependencyResolution=ResolutionScope.TEST, defaultPhase=LifecyclePhase.GENERATE_SOURCES, threadSafe=true)
 @Execute(phase=LifecyclePhase.GENERATE_SOURCES)
-public class JavadocMojo extends JavadocReport {
-  @Component
-  private ArchiverManager archiverManager;
+public class JavadocMojo extends JavadocReport implements SharedMojo {
+  private static final ReverseExecutor reverseExecutor = new ReverseExecutor();
 
   @Component
-  private ArtifactResolver artifactResolver;
+  private ArchiverManager _archiverManager;
 
   @Component
-  private DependencyResolver dependencyResolver;
+  private ArtifactResolver _artifactResolver;
 
   @Component
-  private RepositoryManager repositoryManager;
+  private DependencyResolver _dependencyResolver;
 
   @Component
-  private ProjectBuilder projectBuilder;
+  private RepositoryManager _repositoryManager;
 
   @Component
-  private ArtifactHandlerManager artifactHandlerManager;
+  private ProjectBuilder _projectBuilder;
 
-  @Parameter(defaultValue="${reactorProjects}", readonly=true)
-  private List<MavenProject> reactorProjects;
+  @Component
+  private ArtifactHandlerManager _artifactHandlerManager;
 
-  @Parameter(defaultValue="${settings.offline}", required=true, readonly=true)
-  protected boolean offline;
+  @Parameter(defaultValue="${reactorProjects}", required=true, readonly=true)
+  private List<MavenProject> _reactorProjects;
 
-  @Parameter
-  private List<UrlOverride> urlOverrrides;
+  @Parameter(defaultValue="${settings}", readonly=true, required=true)
+  private Settings _settings;
+
+  private Boolean _isAggregator;
 
   @Override
-  public void execute() throws MojoExecutionException, MojoFailureException {
-    invoke(this, urlOverrrides, offline, project, session, project.getRemoteArtifactRepositories(), reactorProjects, archiverManager, artifactResolver, dependencyResolver, repositoryManager, projectBuilder, artifactHandlerManager);
-    super.execute();
+  protected boolean isAggregator() {
+    return _isAggregator == null ? _isAggregator = "pom".equalsIgnoreCase(project.getPackaging()) : _isAggregator;
+  }
+
+  @Override
+  protected Map<String,Collection<String>> getSourcePaths() throws MavenReportException {
+    return filterSourcePaths(super.getSourcePaths(), project);
+  }
+
+  @Override
+  protected void executeReport(final Locale unusedLocale) throws MavenReportException {
+    getLog().debug("Submitting " + project.getName() + " " + project.getVersion());
+    reverseExecutor.submit(project, session, () -> {
+      getLog().info("Running " + project.getName() + " " + project.getVersion());
+      try {
+        final List<OfflineLink> offlineLinks = UnpackDependencies.execute(getLog(), _settings, project, session, _reactorProjects, _archiverManager, _artifactResolver, _dependencyResolver, _repositoryManager, _projectBuilder, _artifactHandlerManager);
+        setOfflineLinks(offlineLinks.toArray(new OfflineLink[offlineLinks.size()]));
+        if (isAggregator())
+          project.setExecutionRoot(true);
+
+        super.executeReport(unusedLocale);
+      }
+      catch (final MavenReportException | MojoExecutionException | MojoFailureException e) {
+        throw new IllegalStateException(e);
+      }
+    });
   }
 }

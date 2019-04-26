@@ -16,8 +16,6 @@
 
 package org.apache.maven.plugins.javadoc;
 
-import static org.apache.maven.plugins.javadoc.MojoUtil.*;
-
 import java.util.List;
 
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -40,35 +38,42 @@ import org.codehaus.plexus.archiver.manager.ArchiverManager;
 @Execute(phase=LifecyclePhase.GENERATE_SOURCES)
 public class JavadocJarMojo extends JavadocJar {
   @Component
-  private ArchiverManager archiverManager;
+  private ArchiverManager _archiverManager;
 
   @Component
-  private ArtifactResolver artifactResolver;
+  private ArtifactResolver _artifactResolver;
 
   @Component
-  private DependencyResolver dependencyResolver;
+  private DependencyResolver _dependencyResolver;
 
   @Component
-  private RepositoryManager repositoryManager;
+  private RepositoryManager _repositoryManager;
 
   @Component
-  private ProjectBuilder projectBuilder;
+  private ProjectBuilder _projectBuilder;
 
   @Component
-  private ArtifactHandlerManager artifactHandlerManager;
+  private ArtifactHandlerManager _artifactHandlerManager;
 
-  @Parameter(defaultValue="${reactorProjects}", readonly=true)
-  private List<MavenProject> reactorProjects;
+  @Parameter(defaultValue="${reactorProjects}", required=true, readonly=true)
+  private List<MavenProject> _reactorProjects;
 
   @Parameter(defaultValue="${settings.offline}", required=true, readonly=true)
-  protected boolean offline;
+  protected boolean _offline;
 
-  @Parameter
-  private List<UrlOverride> urlOverrrides;
+  private Boolean _isAggregator;
+
+  @Override
+  protected boolean isAggregator() {
+    return _isAggregator == null ? _isAggregator = "pom".equalsIgnoreCase(project.getPackaging()) : _isAggregator;
+  }
 
   @Override
   public void execute() throws MojoExecutionException, MojoFailureException {
-    invoke(this, urlOverrrides, offline, project, session, project.getRemoteArtifactRepositories(), reactorProjects, archiverManager, artifactResolver, dependencyResolver, repositoryManager, projectBuilder, artifactHandlerManager);
+//    MojoUtil.invoke(getLog(), _urlOverrrides, _offline, project, session, _reactorProjects, _archiverManager, _artifactResolver, _dependencyResolver, _repositoryManager, _projectBuilder, _artifactHandlerManager);
+    if (isAggregator())
+      project.setExecutionRoot(true);
+
     super.execute();
   }
 }

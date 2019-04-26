@@ -41,7 +41,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
   <groupId>org.safris.maven</groupId>
-  <artifactId>offlinejavadoc-maven-plugin</artifactId>
+  <artifactId>javadocio-maven-plugin</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
   <name>Offline Javadoc Maven Plugin</name>
@@ -52,7 +52,7 @@
         <artifactId>maven-plugin-plugin</artifactId>
         <version>3.6.0</version>
         <configuration>
-          <goalPrefix>offlinejavadoc</goalPrefix>
+          <goalPrefix>javadocio</goalPrefix>
         </configuration>
         <executions>
           <execution>
