@@ -1,4 +1,4 @@
-/* Copyright (c) 2019 OpenJAX
+/* Copyright (c) 2019 Seva Safris
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -128,7 +128,7 @@ class UnpackDependencies extends UnpackDependenciesMojo {
 
     final OfflineLink offlineLink = new OfflineLink();
     offlineLink.setUrl(getJavadocIoUrl(artifact));
-    offlineLink.setLocation(new File(model.getPomFile().getParentFile(), "target/site/apidocs/").getAbsolutePath());
+    offlineLink.setLocation(new File(model.getPomFile().getParentFile(), "target/apidocs/").getAbsolutePath());
     final Set<OfflineLink> moduleLinks = new LinkedHashSet<>();
     moduleLinks.add(offlineLink);
     artifactToOfflineLinks.put(artifact, moduleLinks);
@@ -227,12 +227,12 @@ class UnpackDependencies extends UnpackDependenciesMojo {
   @Override
   protected void doExecute() throws MojoExecutionException {
     super.doExecute();
-//    try {
-//      for (final Artifact artifact : resolvedArtifacts)
-//        checkPackageList(getDestDir(artifact));
-//    }
-//    catch (final IOException e) {
-//      throw new MojoExecutionException(e.getMessage(), e);
-//    }
+    try {
+      for (final OfflineLink offlineLink : offlineLinks)
+        checkPackageList(offlineLink.getLocation());
+    }
+    catch (final IOException e) {
+      throw new MojoExecutionException(e.getMessage(), e);
+    }
   }
 }

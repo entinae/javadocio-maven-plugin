@@ -1,4 +1,4 @@
-/* Copyright (c) 2019 OpenJAX
+/* Copyright (c) 2019 Seva Safris
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,6 +15,7 @@
  */
 
 package org.apache.maven.plugins.javadoc;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -68,11 +69,12 @@ public class JavadocMojo extends JavadocReport implements SharedMojo {
   @Parameter(defaultValue="${settings}", readonly=true, required=true)
   private Settings _settings;
 
-  private Boolean _isAggregator;
+  @Parameter(defaultValue="${detectGeneratedSourcePaths}")
+  private boolean detectGeneratedSourcePaths;
 
   @Override
-  protected boolean isAggregator() {
-    return _isAggregator == null ? _isAggregator = "pom".equalsIgnoreCase(project.getPackaging()) : _isAggregator;
+  public boolean isAggregator() {
+    return "pom".equalsIgnoreCase(project.getPackaging());
   }
 
   @Override
@@ -81,21 +83,20 @@ public class JavadocMojo extends JavadocReport implements SharedMojo {
   }
 
   @Override
-  protected void executeReport(final Locale unusedLocale) throws MavenReportException {
-    getLog().debug("Submitting " + project.getName() + " " + project.getVersion());
-    reverseExecutor.submit(project, session, () -> {
-      getLog().info("Running " + project.getName() + " " + project.getVersion());
-      try {
-        final List<OfflineLink> offlineLinks = UnpackDependencies.execute(getLog(), _settings, project, session, _reactorProjects, _archiverManager, _artifactResolver, _dependencyResolver, _repositoryManager, _projectBuilder, _artifactHandlerManager);
-        setOfflineLinks(offlineLinks.toArray(new OfflineLink[offlineLinks.size()]));
-        if (isAggregator())
-          project.setExecutionRoot(true);
+  public List<OfflineLink> collectOfflineLinks() throws MojoExecutionException, MojoFailureException {
+    return UnpackDependencies.execute(getLog(), _settings, project, session, _reactorProjects, _archiverManager, _artifactResolver, _dependencyResolver, _repositoryManager, _projectBuilder, _artifactHandlerManager);
+  }
 
-        super.executeReport(unusedLocale);
-      }
-      catch (final MavenReportException | MojoExecutionException | MojoFailureException e) {
-        throw new IllegalStateException(e);
-      }
-    });
+  @Override
+  public void executeSuperReport(final Locale unusedLocale) throws MavenReportException {
+    super.executeReport(unusedLocale);
+  }
+
+  @Override
+  protected void executeReport(final Locale unusedLocale) throws MavenReportException {
+    if (detectGeneratedSourcePaths)
+      addGeneratedSourcePaths(project);
+
+    executeReport(project, session, reverseExecutor, unusedLocale);
   }
 }

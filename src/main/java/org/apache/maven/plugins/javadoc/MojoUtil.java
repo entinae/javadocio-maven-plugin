@@ -1,4 +1,4 @@
-/* Copyright (c) 2019 OpenJAX
+/* Copyright (c) 2019 Seva Safris
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,7 +71,7 @@ final class MojoUtil {
     return checkSlash(parentUrl) + model.getArtifactId() + "/";
   }
 
-  static void checkPackageList(final File destDir) throws IOException {
+  static void checkPackageList(final String destDir) throws IOException {
     final File packageListFile = new File(destDir, "package-list");
     if (!packageListFile.exists()) {
       final File elementListFile = new File(destDir, "element-list");
