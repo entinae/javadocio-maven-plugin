@@ -119,6 +119,9 @@ public interface SharedMojo {
   default void addGeneratedSourcePaths(final MavenProject project) throws MavenReportException {
     try {
       final File generatedSources = new File(project.getBuild().getDirectory(), "generated-sources");
+      if (!generatedSources.exists())
+        return;
+
       final List<String> paths = new ArrayList<>();
       Files.walk(generatedSources.toPath()).filter(Files::isRegularFile).forEach((o) -> {
         final File file = o.toFile();
