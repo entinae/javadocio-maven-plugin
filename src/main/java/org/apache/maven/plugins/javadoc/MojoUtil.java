@@ -27,13 +27,10 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 final class MojoUtil {
-  private static String checkSlash(final String url) {
-    return url.charAt(url.length() - 1) != '/' ? url + "/" : url;
-  }
-
   private static String getId(final Model model) {
     final String groupId = model.getGroupId() != null ? model.getGroupId() : model.getParent().getGroupId();
     final String version = model.getVersion() != null ? model.getVersion() : model.getParent().getVersion();
@@ -60,15 +57,15 @@ final class MojoUtil {
 
   static String getModelUrl(final File pomFile) {
     final Model model = getModelArtifact(pomFile);
-    final String url = model.getUrl();
+    final String url = cleanUrl(model.getUrl());
     if (url != null)
-      return checkSlash(url);
+      return url;
 
     final String id = getId(model);
     final String artifactDir = pomFile.getParent();
     final String localRepoPath = artifactDir.substring(0, artifactDir.length() - id.length());
     final String parentUrl = getParentPath(localRepoPath, model.getParent());
-    return checkSlash(parentUrl) + model.getArtifactId() + "/";
+    return parentUrl + model.getArtifactId() + "/";
   }
 
   static void checkPackageList(final String destDir) throws IOException {
@@ -99,6 +96,21 @@ final class MojoUtil {
     catch (final NoSuchFieldException | IllegalAccessException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  private static String cleanUrl(String url) {
+    if (url == null)
+      return null;
+
+    url = url.trim();
+    while (url.endsWith("/"))
+      url = url.substring(0, url.lastIndexOf('/'));
+
+    return url + "/";
+  }
+
+  static String getJavadocLink(final MavenProject project) {
+    return project.getUrl() == null ? null : cleanUrl(project.getUrl()) + "/apidocs";
   }
 
   private MojoUtil() {

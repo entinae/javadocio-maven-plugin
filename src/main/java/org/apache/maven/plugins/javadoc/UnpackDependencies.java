@@ -127,7 +127,7 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     }
 
     final OfflineLink offlineLink = new OfflineLink();
-    offlineLink.setUrl(getJavadocIoUrl(artifact));
+    offlineLink.setUrl(getJavadocIoLink(artifact));
     offlineLink.setLocation(new File(model.getPomFile().getParentFile(), "target/apidocs/").getAbsolutePath());
     final Set<OfflineLink> moduleLinks = new LinkedHashSet<>();
     moduleLinks.add(offlineLink);
@@ -140,25 +140,42 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     return project;
   }
 
-  private String getUrl(final Artifact artifact) {
-    return getModelUrl(new File(artifact.getFile().toString().replace("-javadoc.jar", ".pom"))) + "apidocs/";
+  private static String getJavadocLink(final Artifact artifact) {
+    final String filePath = artifact.getFile().toString();
+    if (!filePath.endsWith("-javadoc.jar"))
+      return null;
+
+    return getModelUrl(new File(filePath.substring(filePath.length() - 12) + ".pom")) + "apidocs/";
   }
 
-  private String getCheckUrl(final Artifact artifact) {
-    final String url = getUrl(artifact);
-    if (!offline && !exists(url))
-      getLog().warn("Error fetching link for dependency [" + artifact.getGroupId() + ":" + artifact.getArtifactId() + "]: " + url);
-
-    return url;
-  }
-
-  private String getJavadocIoUrl(final Artifact artifact) {
+  private String getJavadocIoLink(final Artifact artifact) {
     final String version = artifact.getVersion().replace("-SNAPSHOT", "");
     final String url ="https://static.javadoc.io/" + artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + version + "/";
+    // Trigger javadoc.io to start downloading the javadocs if not yet available
     if (!offline && !exists(url + "index.html"))
       exists("https://www.javadoc.io/doc/" + artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + version + "/");
 
     return url;
+  }
+
+  private static boolean downloadPackageList(final String docUrl, final File file) {
+    if (docUrl == null)
+      return false;
+
+    try {
+      final URL url = new URL(docUrl + "package-list");
+      try (
+        final ReadableByteChannel channel = Channels.newChannel(url.openStream());
+        final FileOutputStream out = new FileOutputStream(file);
+      ) {
+        out.getChannel().transferFrom(channel, 0, Long.MAX_VALUE);
+      }
+
+      return true;
+    }
+    catch (final IOException e) {
+      return false;
+    }
   }
 
   private void addDependency(final Artifact artifact, final boolean resolved) {
@@ -171,21 +188,12 @@ class UnpackDependencies extends UnpackDependenciesMojo {
       if (dependencyLink == null) {
         final File destDir = getFormattedOutputDirectory(artifact);
         dependencyLink = new OfflineLink();
-        dependencyLink.setUrl(getJavadocIoUrl(artifact));
+        dependencyLink.setUrl(getJavadocIoLink(artifact));
         dependencyLink.setLocation(destDir.getAbsolutePath());
         if (!resolved) {
-          try {
-            destDir.mkdirs();
-            final URL url = new URL(getJavadocIoUrl(artifact) + "package-list");
-            try (
-              final ReadableByteChannel channel = Channels.newChannel(url.openStream());
-              final FileOutputStream out = new FileOutputStream(new File(destDir, "package-list"));
-            ) {
-              out.getChannel().transferFrom(channel, 0, Long.MAX_VALUE);
-            }
-
-          }
-          catch (final IOException e) {
+          destDir.mkdirs();
+          final File packageListFile = new File(destDir, "package-list");
+          if (!downloadPackageList(getJavadocIoLink(artifact), packageListFile) && !downloadPackageList(getJavadocLink(artifact), packageListFile)) {
             getLog().error("Unable to resolve dependency: " + artifact.getId());
             return;
           }
@@ -203,7 +211,7 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     builder.append(artifact.getGroupId().replace('.', File.separatorChar)).append(File.separatorChar);
     builder.append(artifact.getArtifactId()).append(File.separatorChar);
     builder.append(artifact.getBaseVersion()).append(File.separatorChar);
-    builder.append(artifact.getClassifier()).append(File.separatorChar);
+    builder.append("javadoc").append(File.separatorChar);
     return new File(outputDirectory, builder.toString());
   }
 

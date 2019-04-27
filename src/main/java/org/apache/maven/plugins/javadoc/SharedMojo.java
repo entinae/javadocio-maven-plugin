@@ -169,10 +169,8 @@ public interface SharedMojo {
           throw new IllegalStateException(e);
         }
 
-        if (packageName == null)
-          getLog().warn("Could not determine package name of: " + file.getAbsolutePath());
-
-        paths.add(filePath.substring(0, filePath.length() - packageName.length() - 1));
+        if (packageName != null)
+          paths.add(filePath.substring(0, filePath.length() - packageName.length() - 1));
       });
 
       if (paths.size() == 0)

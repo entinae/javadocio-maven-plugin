@@ -16,18 +16,10 @@
 
 package org.apache.maven.plugins.javadoc;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Scanner;
-
-import javax.sound.midi.SysexMessage;
 
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.plugin.MojoExecutionException;
