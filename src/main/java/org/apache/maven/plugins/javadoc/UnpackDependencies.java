@@ -19,11 +19,8 @@ package org.apache.maven.plugins.javadoc;
 import static org.apache.maven.plugins.javadoc.MojoUtil.*;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -56,8 +53,11 @@ import org.codehaus.plexus.archiver.manager.ArchiverManager;
 class UnpackDependencies extends UnpackDependenciesMojo {
   private static final Map<Artifact,Set<OfflineLink>> artifactToOfflineLinks = new HashMap<>();
   private static final Map<Artifact,OfflineLink> artifactToDependencyLink = new HashMap<>();
-
+  private static final boolean reportError;
   static {
+    final String sunJavaCommand = System.getProperty("sun.java.command") + " ";
+    reportError = sunJavaCommand.contains(" -e ") || sunJavaCommand.contains(" --error ");
+    System.setProperty("https.protocols", "TLSv1.2,TLSv1.1,SSLv3");
     System.setProperty("http.agent", "");
   }
 
@@ -158,22 +158,27 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     return url;
   }
 
-  private static boolean downloadPackageList(final String docUrl, final File file) {
+  private boolean downloadPackageList(String docUrl, final File file) {
     if (docUrl == null)
       return false;
 
     try {
-      final URL url = new URL(docUrl + "package-list");
-      try (
-        final ReadableByteChannel channel = Channels.newChannel(url.openStream());
-        final FileOutputStream out = new FileOutputStream(file);
-      ) {
-        out.getChannel().transferFrom(channel, 0, Long.MAX_VALUE);
-      }
+      final int responseCode = downloadFile(docUrl = docUrl + "package-list", file);
+      if (responseCode == HttpURLConnection.HTTP_NOT_MODIFIED)
+        getLog().debug("Not Modified: " + docUrl);
 
       return true;
     }
     catch (final IOException e) {
+      String message = e.getMessage();
+      if (!message.contains(docUrl))
+        message += ": " + docUrl;
+
+      if (reportError)
+        getLog().warn(message, e);
+      else
+        getLog().warn(message);
+
       return false;
     }
   }

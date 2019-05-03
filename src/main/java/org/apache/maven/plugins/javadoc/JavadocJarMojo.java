@@ -42,7 +42,7 @@ import org.codehaus.plexus.archiver.manager.ArchiverManager;
 
 @Mojo(name="jar", requiresDependencyResolution=ResolutionScope.TEST, defaultPhase=LifecyclePhase.GENERATE_SOURCES, threadSafe=true)
 @Execute(phase=LifecyclePhase.GENERATE_SOURCES)
-public class JavadocJarMojo extends JavadocJar implements SharedMojo {
+public class JavadocJarMojo extends JavadocJar implements DefaultMojo {
   private static final ReverseExecutor reverseExecutor = new ReverseExecutor();
 
   @Component
@@ -97,6 +97,6 @@ public class JavadocJarMojo extends JavadocJar implements SharedMojo {
     if (detectGeneratedSourcePaths)
       addGeneratedSourcePaths(project);
 
-    executeReport(project, session, reverseExecutor, unusedLocale);
+    executeReport(project, reverseExecutor, unusedLocale);
   }
 }

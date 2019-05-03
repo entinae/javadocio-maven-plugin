@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
 
 public class ReverseExecutor {
@@ -47,19 +46,7 @@ public class ReverseExecutor {
       this.project = null;
       this.runnable = null;
       this.name = null;
-      this.modules = new HashMap<String,Module>() {
-        private static final long serialVersionUID = -6282956087784005332L;
-
-        @Override
-        public Module put(final String key, final Module value) {
-          return super.put("", value);
-        }
-
-        @Override
-        public Module remove(final Object key) {
-          return super.remove("");
-        }
-      };
+      this.modules = new HashMap<>();
     }
 
     private void addModule(final Module module) {
@@ -107,11 +94,23 @@ public class ReverseExecutor {
     }
   }
 
-  public void submit(final MavenProject project, final MavenSession session, final Runnable runnable) {
+  private String rootDir;
+
+  public void submit(final MavenProject project, final Runnable runnable) {
     final Module module = new Module(project, runnable);
-    final String rootDir = session.getExecutionRootDirectory();
     final String parentPath = project.getBasedir().getParentFile().getAbsolutePath();
-    final Module parent = parentPath.length() < rootDir.length() ? rootModule : rootModule.getModule(parentPath.substring(rootDir.length()));
+    if (rootDir == null)
+      rootDir = parentPath + "/";
+
+    final Module parent;
+    if (parentPath.length() <= rootDir.length()) {
+      parent = rootModule;
+    }
+    else {
+      final String x = parentPath.substring(rootDir.length());
+      parent = rootModule.getModule(x);
+    }
+
     parent.addModule(module);
     if (project.getModules().isEmpty()) {
       final String name = project.getBasedir().getName();

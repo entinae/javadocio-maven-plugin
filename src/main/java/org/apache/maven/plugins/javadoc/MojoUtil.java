@@ -17,9 +17,12 @@
 package org.apache.maven.plugins.javadoc;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.net.HttpURLConnection;
 import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
@@ -31,6 +34,8 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 final class MojoUtil {
+  private static final int BUFFER_SIZE = 4096;
+
   private static String getId(final Model model) {
     final String groupId = model.getGroupId() != null ? model.getGroupId() : model.getParent().getGroupId();
     final String version = model.getVersion() != null ? model.getVersion() : model.getParent().getVersion();
@@ -111,6 +116,40 @@ final class MojoUtil {
 
   static String getJavadocLink(final MavenProject project) {
     return project.getUrl() == null ? null : cleanUrl(project.getUrl()) + "/apidocs";
+  }
+
+  /**
+   * Downloads a file from the specified {@code url} to the provided
+   * {@code file}. If the provided {@code file} exists, its lastModified
+   * timestamp is used to specify the {@code If-Modified-Since} header in the
+   * GET request. Content is not downloaded if the file at the specified
+   * {@code url} is not modified.
+   *
+   * @param url The {@code URL} from which to download.
+   * @param file The destination {@code File}.
+   * @return The HTTP response code.
+   * @throws IOException If an I/O error has occurred.
+   */
+  static int downloadFile(final String url, final File file) throws IOException {
+    final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
+    try {
+      connection.setIfModifiedSince(file.lastModified());
+      final int responseCode = connection.getResponseCode();
+      if (responseCode != HttpURLConnection.HTTP_NOT_MODIFIED && responseCode == HttpURLConnection.HTTP_OK) {
+        try (
+          final InputStream in = connection.getInputStream();
+          final FileOutputStream out = new FileOutputStream(file);
+        ) {
+          final byte[] buffer = new byte[BUFFER_SIZE];
+          for (int read; (read = in.read(buffer)) != -1; out.write(buffer, 0, read));
+        }
+      }
+
+      return responseCode;
+    }
+    finally {
+      connection.disconnect();
+    }
   }
 
   private MojoUtil() {

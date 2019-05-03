@@ -30,7 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
@@ -38,7 +37,7 @@ import org.apache.maven.plugins.javadoc.options.OfflineLink;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.reporting.MavenReportException;
 
-public interface SharedMojo {
+public interface DefaultMojo {
   static OfflineLink[] merge(final OfflineLink[] a, final OfflineLink[] b) {
     final Map<String,OfflineLink> urlToOfflineLink = new LinkedHashMap<>();
     if (a != null)
@@ -140,7 +139,8 @@ public interface SharedMojo {
           while (scanner.hasNext()) {
             final String line = scanner.next().trim();
             if (inBlockQuote) {
-              if (line.contains("*/"))
+              // Matches a line that has a closing block comment "*/" sequence
+              if (line.matches("^(([^*]|(\\*[^/]))*\\*+/([^/]|(/[^*])|(/$))*)*$"))
                 inBlockQuote = false;
               else
                 continue;
@@ -150,7 +150,8 @@ public interface SharedMojo {
               continue;
             }
 
-            if (line.startsWith("/*")) {
+            // Matches a line that has an opening block comment "/*" sequence
+            if (line.matches("^(([^/]|(/[^*]))*/+\\*([^*]|(\\*[^/])|(\\*$))*)*$")) {
               inBlockQuote = true;
               continue;
             }
@@ -171,6 +172,8 @@ public interface SharedMojo {
 
         if (packageName != null)
           paths.add(filePath.substring(0, filePath.length() - packageName.length() - 1));
+        else
+          getLog().warn("Could not determine package name of: " + file.getAbsolutePath());
       });
 
       if (paths.size() == 0)
@@ -191,9 +194,9 @@ public interface SharedMojo {
     }
   }
 
-  default void executeReport(final MavenProject project, final MavenSession session, final ReverseExecutor reverseExecutor, final Locale unusedLocale) {
+  default void executeReport(final MavenProject project, final ReverseExecutor reverseExecutor, final Locale unusedLocale) {
     getLog().debug("Submitting " + project.getName() + " " + project.getVersion());
-    reverseExecutor.submit(project, session, () -> {
+    reverseExecutor.submit(project, () -> {
       getLog().info("Running " + project.getName() + " " + project.getVersion());
       try {
         final List<OfflineLink> offlineLinks = collectOfflineLinks();
