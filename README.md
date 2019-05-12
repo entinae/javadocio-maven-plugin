@@ -2,8 +2,8 @@
 
 > Creates JavaDocs that interlink to [javadoc.io](https://www.javadoc.io).
 
-[![Build Status](https://travis-ci.org/sevasafris/javadocio-maven-plugin.png)](https://travis-ci.org/sevasafris/javadocio-maven-plugin)
-[![Coverage Status](https://coveralls.io/repos/github/sevasafris/javadocio-maven-plugin/badge.svg)](https://coveralls.io/github/sevasafris/javadocio-maven-plugin)
+[![Build Status](https://travis-ci.org/SevaSafris/javadocio-maven-plugin.png)](https://travis-ci.org/SevaSafris/javadocio-maven-plugin)
+[![Coverage Status](https://coveralls.io/repos/github/SevaSafris/javadocio-maven-plugin/badge.svg)](https://coveralls.io/github/SevaSafris/javadocio-maven-plugin)
 [![Javadocs](https://www.javadoc.io/badge/org.safris.maven/javadocio-maven-plugin.svg)](https://www.javadoc.io/doc/org.safris.maven/javadocio-maven-plugin)
 [![Released Version](https://img.shields.io/maven-central/v/org.safris.maven/javadocio-maven-plugin.svg)](https://mvnrepository.com/artifact/org.safris.maven/javadocio-maven-plugin)
 
