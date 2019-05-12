@@ -61,12 +61,13 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     System.setProperty("http.agent", "");
   }
 
-  static List<OfflineLink> execute(final Log log, final Settings settings, final MavenProject project, final MavenSession session, final List<MavenProject> reactorProjects, final ArchiverManager archiverManager, final ArtifactResolver artifactResolver, final DependencyResolver dependencyResolver, final RepositoryManager repositoryManager, final ProjectBuilder projectBuilder, final ArtifactHandlerManager artifactHandlerManager) throws MojoExecutionException, MojoFailureException {
-    final UnpackDependencies unpackDependencies = new UnpackDependencies(log, settings, project, session, reactorProjects, archiverManager, artifactResolver, dependencyResolver, repositoryManager, projectBuilder, artifactHandlerManager);
+  static List<OfflineLink> execute(final DefaultMojo mojo, final Settings settings, final MavenProject project, final MavenSession session, final List<MavenProject> reactorProjects, final ArchiverManager archiverManager, final ArtifactResolver artifactResolver, final DependencyResolver dependencyResolver, final RepositoryManager repositoryManager, final ProjectBuilder projectBuilder, final ArtifactHandlerManager artifactHandlerManager) throws MojoExecutionException, MojoFailureException {
+    final UnpackDependencies unpackDependencies = new UnpackDependencies(mojo, settings, project, session, reactorProjects, archiverManager, artifactResolver, dependencyResolver, repositoryManager, projectBuilder, artifactHandlerManager);
     unpackDependencies.execute();
     final List<OfflineLink> offlineLinks = new ArrayList<>(unpackDependencies.offlineLinks);
     // Remove the 1st entry, as it is the entry for this project itself
     offlineLinks.remove(0);
+    final Log log = mojo.getLog();
     if (log.isDebugEnabled()) {
       log.debug("Detected offline links...");
       for (final OfflineLink link : offlineLinks)
@@ -77,12 +78,14 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     return offlineLinks;
   }
 
+  private final DefaultMojo mojo;
   private final Set<OfflineLink> offlineLinks;
   private final boolean offline;
   private final MavenProject project;
 
-  private UnpackDependencies(final Log log, final Settings settings, final MavenProject project, final MavenSession session, final List<MavenProject> reactorProjects, final ArchiverManager archiverManager, final ArtifactResolver artifactResolver, final DependencyResolver dependencyResolver, final RepositoryManager repositoryManager, final ProjectBuilder projectBuilder, final ArtifactHandlerManager artifactHandlerManager) {
-    setLog(new FilterLog(log) {
+  private UnpackDependencies(final DefaultMojo mojo, final Settings settings, final MavenProject project, final MavenSession session, final List<MavenProject> reactorProjects, final ArchiverManager archiverManager, final ArtifactResolver artifactResolver, final DependencyResolver dependencyResolver, final RepositoryManager repositoryManager, final ProjectBuilder projectBuilder, final ArtifactHandlerManager artifactHandlerManager) {
+    this.mojo = mojo;
+    setLog(new FilterLog(mojo.getLog()) {
       @Override
       public boolean isInfoEnabled() {
         return false;
@@ -128,7 +131,8 @@ class UnpackDependencies extends UnpackDependenciesMojo {
 
     final OfflineLink offlineLink = new OfflineLink();
     offlineLink.setUrl(getJavadocIoLink(artifact));
-    offlineLink.setLocation(new File(model.getPomFile().getParentFile(), "target/apidocs/").getAbsolutePath());
+    final File apiDocs = new File(model.getPomFile().getParentFile(), "target/" + mojo.getApiDocsTargetPath() + "/");
+    offlineLink.setLocation(apiDocs.getAbsolutePath());
     final Set<OfflineLink> moduleLinks = new LinkedHashSet<>();
     moduleLinks.add(offlineLink);
     artifactToOfflineLinks.put(artifact, moduleLinks);

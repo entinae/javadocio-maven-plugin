@@ -214,6 +214,7 @@ public interface DefaultMojo {
 
   Log getLog();
   boolean isAggregator();
+  String getApiDocsTargetPath();
   void executeSuperReport(Locale unusedLocale) throws MavenReportException;
   List<OfflineLink> collectOfflineLinks() throws MojoExecutionException, MojoFailureException;
 }

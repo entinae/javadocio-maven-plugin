@@ -78,13 +78,18 @@ public class JavadocMojo extends JavadocReport implements DefaultMojo {
   }
 
   @Override
+  public String getApiDocsTargetPath() {
+    return "site/apidocs";
+  }
+
+  @Override
   protected Map<String,Collection<String>> getSourcePaths() throws MavenReportException {
     return filterSourcePaths(super.getSourcePaths(), project);
   }
 
   @Override
   public List<OfflineLink> collectOfflineLinks() throws MojoExecutionException, MojoFailureException {
-    return UnpackDependencies.execute(getLog(), _settings, project, session, _reactorProjects, _archiverManager, _artifactResolver, _dependencyResolver, _repositoryManager, _projectBuilder, _artifactHandlerManager);
+    return UnpackDependencies.execute(this, _settings, project, session, _reactorProjects, _archiverManager, _artifactResolver, _dependencyResolver, _repositoryManager, _projectBuilder, _artifactHandlerManager);
   }
 
   @Override
