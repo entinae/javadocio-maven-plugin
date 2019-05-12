@@ -19,15 +19,19 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <groupId>org.safris.maven</groupId>
+  <artifactId>javadocio-maven-plugin</artifactId>
+  <version>0.1.0</version>
+  <packaging>maven-plugin</packaging>
+  <url>https://github.com/SevaSafris/javadocio-maven-plugin</url>
+  <name>Javadoc.io Maven Plugin</name>
+  <description>
+    The Javadoc.io Maven Plugin creates JavaDocs that interlink to javadoc.io.
+  </description>
   <organization>
-    <name>safris.org</name>
+    <name>Seva Safris</name>
     <url>https://www.safris.org/</url>
   </organization>
-  <developers>
-    <developer>
-      <name>Seva Safris</name>
-    </developer>
-  </developers>
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
@@ -35,16 +39,18 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+  <developers>
+    <developer>
+      <id>sevasafris</id>
+      <name>Seva Safris</name>
+      <email>seva@safris.org</email>
+    </developer>
+  </developers>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
-  <groupId>org.safris.maven</groupId>
-  <artifactId>javadocio-maven-plugin</artifactId>
-  <version>0.1.0</version>
-  <packaging>maven-plugin</packaging>
-  <name>Javadoc.io Maven Plugin</name>
   <build>
     <plugins>
       <plugin>
