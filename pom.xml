@@ -32,6 +32,12 @@
     <name>Seva Safris</name>
     <url>https://www.safris.org/</url>
   </organization>
+  <scm>
+    <url>https://github.com/SevaSafris/javadocio-maven-plugin</url>
+    <connection>scm:git:https://github.com/SevaSafris/javadocio-maven-plugin.git</connection>
+    <developerConnection>scm:git:https://github.com/SevaSafris/javadocio-maven-plugin.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
