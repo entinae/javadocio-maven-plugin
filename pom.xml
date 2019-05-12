@@ -42,7 +42,7 @@
   </properties>
   <groupId>org.safris.maven</groupId>
   <artifactId>javadocio-maven-plugin</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0</version>
   <packaging>maven-plugin</packaging>
   <name>Javadoc.io Maven Plugin</name>
   <build>
