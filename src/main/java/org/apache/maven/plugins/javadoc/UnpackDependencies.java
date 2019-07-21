@@ -54,6 +54,7 @@ class UnpackDependencies extends UnpackDependenciesMojo {
   private static final Map<Artifact,Set<OfflineLink>> artifactToOfflineLinks = new HashMap<>();
   private static final Map<Artifact,OfflineLink> artifactToDependencyLink = new HashMap<>();
   private static final boolean reportError;
+
   static {
     final String sunJavaCommand = System.getProperty("sun.java.command") + " ";
     reportError = sunJavaCommand.contains(" -e ") || sunJavaCommand.contains(" --error ");

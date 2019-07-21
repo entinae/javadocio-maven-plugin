@@ -51,41 +51,40 @@ public class ReverseExecutor {
 
     private void addModule(final Module module) {
       if (this.project != null && !this.modules.containsKey(module.name))
-        throw new IllegalStateException();
+        throw new IllegalStateException("Module not found: " + module.name);
 
       if (module.parent != null)
-        throw new IllegalStateException();
+        throw new IllegalStateException("Parent was already set");
 
       module.parent = this;
       this.modules.put(module.name, module);
     }
 
     public void removeModule(final String qualifiedName) {
-      final int index = qualifiedName.indexOf('/');
-      final String name = index == -1 ? qualifiedName : qualifiedName.substring(0, index);
-      if (name.equals(qualifiedName)) {
-        final Module removed = modules.remove(name);
-        if (removed.modules.size() > 0)
-          throw new IllegalStateException("Expected to remove empty sub-module");
-
-        removed.runnable.run();
-        if (parent != null && modules.size() == 0)
-          parent.removeModule(this.name);
-
+      final int slash = qualifiedName.indexOf('/');
+      final String name = slash == -1 ? qualifiedName : qualifiedName.substring(0, slash);
+      if (!name.equals(qualifiedName)) {
+        getModule(name).removeModule(qualifiedName.substring(slash + 1));
         return;
       }
 
-      getModule(name).removeModule(qualifiedName.substring(index + 1));
+      final Module removed = modules.remove(name);
+      if (removed.modules.size() > 0)
+        throw new IllegalStateException("Expected to remove empty sub-module");
+
+      removed.runnable.run();
+      if (parent != null && modules.size() == 0)
+        parent.removeModule(this.name);
     }
 
     public Module getModule(final String qualifiedName) {
-      final int index = qualifiedName.indexOf('/');
-      final String name = index == -1 ? qualifiedName : qualifiedName.substring(0, index);
+      final int slash = qualifiedName.indexOf('/');
+      final String name = slash == -1 ? qualifiedName : qualifiedName.substring(0, slash);
       final Module module = modules.get(name);
       if (module == null)
-        throw new IllegalStateException();
+        throw new IllegalStateException("Module not found: " + name);
 
-      return name.equals(qualifiedName) ? module : module.getModule(qualifiedName.substring(index + 1));
+      return name.equals(qualifiedName) ? module : module.getModule(qualifiedName.substring(slash + 1));
     }
 
     @Override
@@ -103,18 +102,13 @@ public class ReverseExecutor {
       rootDir = parentPath + "/";
 
     final Module parent;
-    if (parentPath.length() <= rootDir.length()) {
+    if (parentPath.length() <= rootDir.length())
       parent = rootModule;
-    }
-    else {
-      final String x = parentPath.substring(rootDir.length());
-      parent = rootModule.getModule(x);
-    }
+    else
+      parent = rootModule.getModule(parentPath.substring(rootDir.length()));
 
     parent.addModule(module);
-    if (project.getModules().isEmpty()) {
-      final String name = project.getBasedir().getName();
-      parent.removeModule(name);
-    }
+    if (project.getModules().isEmpty())
+      parent.removeModule(project.getBasedir().getName());
   }
 }
