@@ -11,7 +11,7 @@ The JavaDocIO Maven Plugin creates JavaDocs that interlink to [javadoc.io](https
 
 ### Goals Overview
 
-The CodeGen Plugin has two goals. The goals are bound to the `validate` phase within the Maven Lifecycle, and can be automatically executed during their respective phases with the use of `<extensions>true</extensions>` in the plugin descriptor.
+The JavaDocIO Plugin supports two goals.
 
 * `javadoc:javadoc` Generates documentation for the Java code in either an aggregator or non-aggregator project.
 * `javadoc:jar` Bundles the Javadoc documentation for main Java code in an aggregator or non-aggregator aggregator project into a jar.
