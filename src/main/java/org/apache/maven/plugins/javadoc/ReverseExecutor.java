@@ -27,17 +27,20 @@ public class ReverseExecutor {
   private final Module rootModule = new Module();
 
   private class Module {
+    private final Map<String,Module> modules = new HashMap<>();
     private final MavenProject project;
     private final Runnable runnable;
     private final String name;
-    private final Map<String,Module> modules;
     private Module parent;
 
     private Module(final MavenProject project, final Runnable runnable) {
       this.project = Objects.requireNonNull(project);
       this.runnable = runnable;
-      this.name = project.getParent() == null ? project.getBasedir().getName() : project.getBasedir().getAbsolutePath().substring(project.getParent().getBasedir().getAbsolutePath().length() + 1);
-      this.modules = new HashMap<>();
+      if (project.getParent() == null)
+        this.name = project.getBasedir().getName();
+      else
+        this.name = project.getBasedir().getAbsolutePath().substring(project.getParent().getBasedir().getAbsolutePath().length() + 1);
+
       for (final String module : new ArrayList<>(project.getModules()))
         this.modules.put(module, null);
     }
@@ -46,7 +49,6 @@ public class ReverseExecutor {
       this.project = null;
       this.runnable = null;
       this.name = null;
-      this.modules = new HashMap<>();
     }
 
     private void addModule(final Module module) {
@@ -64,7 +66,6 @@ public class ReverseExecutor {
       String name = qualifiedName;
       while (true) {
         final Module module = remove ? modules.remove(name) : modules.get(name);
-        final int slash = name.lastIndexOf('/');
         if (module != null) {
           if (name.equals(qualifiedName)) {
             if (remove) {
@@ -82,13 +83,12 @@ public class ReverseExecutor {
           return module.processModule(qualifiedName.substring(name.length() + 1), remove);
         }
 
+        final int slash = name.lastIndexOf('/');
         if (slash == -1)
-          break;
+          throw new IllegalStateException("Module (qualified '" + qualifiedName + "') not found: " + name + " in " + modules.keySet());
 
         name = name.substring(0, slash);
       }
-
-      throw new IllegalStateException("Module (qualified '" + qualifiedName + "') not found: " + name + " in " + modules.keySet());
     }
 
     public Module removeModule(final String qualifiedName) {
@@ -109,7 +109,12 @@ public class ReverseExecutor {
 
   public void submit(final MavenProject project, final Runnable runnable) {
     final Module module = new Module(project, runnable);
-    final String parentPath = project.hasParent() ? project.getParent().getBasedir().getAbsolutePath() : project.getBasedir().getParentFile().getAbsolutePath();
+    final String parentPath;
+    if (project.hasParent())
+      parentPath = project.getParent().getBasedir().getAbsolutePath();
+    else
+      parentPath = project.getBasedir().getParentFile().getAbsolutePath();
+
     if (rootDir == null)
       rootDir = parentPath + "/";
 
