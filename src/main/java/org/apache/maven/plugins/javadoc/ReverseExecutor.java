@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 import org.apache.maven.project.MavenProject;
 
@@ -36,7 +37,7 @@ public class ReverseExecutor {
     private Module(final MavenProject project, final Runnable runnable) {
       this.project = Objects.requireNonNull(project);
       this.runnable = runnable;
-      this.name = project.getBasedir().getName();
+      this.name = project.getParent() == null ? project.getBasedir().getName() : project.getBasedir().getAbsolutePath().substring(project.getParent().getBasedir().getAbsolutePath().length() + 1);
       this.modules = new HashMap<>();
       for (final String module : new ArrayList<>(project.getModules()))
         this.modules.put(module, null);
@@ -50,41 +51,53 @@ public class ReverseExecutor {
     }
 
     private void addModule(final Module module) {
-      if (this.project != null && !this.modules.containsKey(module.name))
-        throw new IllegalStateException("Module not found: " + module.name);
+      if (project != null && !modules.containsKey(module.name))
+        throw new IllegalStateException("Module not found: " + module.name + " in " + modules.keySet());
 
       if (module.parent != null)
         throw new IllegalStateException("Parent was already set");
 
       module.parent = this;
-      this.modules.put(module.name, module);
+      modules.put(module.name, module);
     }
 
-    public void removeModule(final String qualifiedName) {
-      final int slash = qualifiedName.indexOf('/');
-      final String name = slash == -1 ? qualifiedName : qualifiedName.substring(0, slash);
-      if (!name.equals(qualifiedName)) {
-        getModule(name).removeModule(qualifiedName.substring(slash + 1));
-        return;
+    private Module processModule(final String qualifiedName, final boolean remove) {
+      String name = qualifiedName;
+      while (true) {
+        final Module module = remove ? modules.remove(name) : modules.get(name);
+        final int slash = name.lastIndexOf('/');
+        if (module != null) {
+          if (name.equals(qualifiedName)) {
+            if (remove) {
+              if (module.modules.size() > 0)
+                throw new IllegalStateException("Expected to remove empty sub-module");
+
+              module.runnable.run();
+              if (parent != null && modules.size() == 0)
+                parent.removeModule(this.name);
+            }
+
+            return module;
+          }
+
+          return module.processModule(qualifiedName.substring(name.length() + 1), remove);
+        }
+
+        if (slash == -1)
+          break;
+
+        name = name.substring(0, slash);
       }
 
-      final Module removed = modules.remove(name);
-      if (removed.modules.size() > 0)
-        throw new IllegalStateException("Expected to remove empty sub-module");
+      throw new IllegalStateException("Module (qualified '" + qualifiedName + "') not found: " + name + " in " + modules.keySet());
+    }
 
-      removed.runnable.run();
-      if (parent != null && modules.size() == 0)
-        parent.removeModule(this.name);
+    public Module removeModule(final String qualifiedName) {
+      return processModule(qualifiedName, true);
     }
 
     public Module getModule(final String qualifiedName) {
-      final int slash = qualifiedName.indexOf('/');
-      final String name = slash == -1 ? qualifiedName : qualifiedName.substring(0, slash);
-      final Module module = modules.get(name);
-      if (module == null)
-        throw new IllegalStateException("Module not found: " + name);
-
-      return name.equals(qualifiedName) ? module : module.getModule(qualifiedName.substring(slash + 1));
+      return processModule(qualifiedName, false);
     }
 
     @Override
@@ -97,7 +110,7 @@ public class ReverseExecutor {
 
   public void submit(final MavenProject project, final Runnable runnable) {
     final Module module = new Module(project, runnable);
-    final String parentPath = project.getBasedir().getParentFile().getAbsolutePath();
+    final String parentPath = project.hasParent() ? project.getParent().getBasedir().getAbsolutePath() : project.getBasedir().getParentFile().getAbsolutePath();
     if (rootDir == null)
       rootDir = parentPath + "/";
 
