@@ -132,6 +132,7 @@ final class MojoUtil {
    */
   static int downloadFile(final String url, final File file) throws IOException {
     final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
+    connection.setConnectTimeout(5000);
     try {
       connection.setIfModifiedSince(file.lastModified());
       final int responseCode = connection.getResponseCode();
