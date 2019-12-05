@@ -23,7 +23,7 @@
   <artifactId>javadocio-maven-plugin</artifactId>
   <version>0.1.2-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
-  <url>https://github.com/SevaSafris/javadocio-maven-plugin</url>
+  <url>https://github.com/safris/javadocio-maven-plugin</url>
   <name>Javadoc.io Maven Plugin</name>
   <description>
     The Javadoc.io Maven Plugin creates JavaDocs that interlink to javadoc.io.
@@ -33,9 +33,9 @@
     <url>https://www.safris.org/</url>
   </organization>
   <scm>
-    <url>https://github.com/SevaSafris/javadocio-maven-plugin</url>
-    <connection>scm:git:https://github.com/SevaSafris/javadocio-maven-plugin.git</connection>
-    <developerConnection>scm:git:https://github.com/SevaSafris/javadocio-maven-plugin.git</developerConnection>
+    <url>https://github.com/safris/javadocio-maven-plugin</url>
+    <connection>scm:git:https://github.com/safris/javadocio-maven-plugin.git</connection>
+    <developerConnection>scm:git:https://github.com/safris/javadocio-maven-plugin.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
   <licenses>
@@ -47,7 +47,7 @@
   </licenses>
   <developers>
     <developer>
-      <id>sevasafris</id>
+      <id>safris</id>
       <name>Seva Safris</name>
       <email>seva@safris.org</email>
     </developer>
