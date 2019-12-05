@@ -36,16 +36,39 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 final class MojoUtil {
   private static final int BUFFER_SIZE = 4096;
 
-  private static String getId(final Model model) {
-    final String groupId = model.getGroupId() != null ? model.getGroupId() : model.getParent().getGroupId();
-    final String version = model.getVersion() != null ? model.getVersion() : model.getParent().getVersion();
-    return groupId + ":" + model.getArtifactId() + ":" + version;
-  }
+  /**
+   * Downloads a file from the specified {@code url} to the provided
+   * {@code file}. If the provided {@code file} exists, its lastModified
+   * timestamp is used to specify the {@code If-Modified-Since} header in the
+   * GET request. Content is not downloaded if the file at the specified
+   * {@code url} is not modified.
+   *
+   * @param url The {@link URL} from which to download.
+   * @param file The destination {@link File}.
+   * @return The HTTP response code.
+   * @throws IOException If an I/O error has occurred.
+   */
+  static int downloadFile(final String url, final File file) throws IOException {
+    final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
+    connection.setConnectTimeout(5000);
+    try {
+      connection.setIfModifiedSince(file.lastModified());
+      final int responseCode = connection.getResponseCode();
+      if (responseCode != HttpURLConnection.HTTP_NOT_MODIFIED && responseCode == HttpURLConnection.HTTP_OK) {
+        try (
+          final InputStream in = connection.getInputStream();
+          final FileOutputStream out = new FileOutputStream(file);
+        ) {
+          final byte[] buffer = new byte[BUFFER_SIZE];
+          for (int read; (read = in.read(buffer)) != -1; out.write(buffer, 0, read));
+        }
+      }
 
-  private static String getParentPath(final String localRepoPath, final Parent parent) {
-    final String artifactPath = parent.getGroupId().replace('.', '/') + "/" + parent.getArtifactId() + "/" + parent.getVersion() + "/";
-    final String parentPath = localRepoPath + artifactPath;
-    return getModelUrl(new File(parentPath, parent.getArtifactId() + "-" + parent.getVersion() + ".pom"));
+      return responseCode;
+    }
+    finally {
+      connection.disconnect();
+    }
   }
 
   static Model getModelArtifact(final File pomFile)  {
@@ -58,6 +81,18 @@ final class MojoUtil {
     catch (final IOException | XmlPullParserException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  private static String getId(final Model model) {
+    final String groupId = model.getGroupId() != null ? model.getGroupId() : model.getParent().getGroupId();
+    final String version = model.getVersion() != null ? model.getVersion() : model.getParent().getVersion();
+    return groupId + ":" + model.getArtifactId() + ":" + version;
+  }
+
+  private static String getParentPath(final String localRepoPath, final Parent parent) {
+    final String artifactPath = parent.getGroupId().replace('.', '/') + "/" + parent.getArtifactId() + "/" + parent.getVersion() + "/";
+    final String parentPath = localRepoPath + artifactPath;
+    return getModelUrl(new File(parentPath, parent.getArtifactId() + "-" + parent.getVersion() + ".pom"));
   }
 
   static String getModelUrl(final File pomFile) {
@@ -116,41 +151,6 @@ final class MojoUtil {
 
   static String getJavadocLink(final MavenProject project) {
     return project.getUrl() == null ? null : cleanUrl(project.getUrl()) + "/apidocs";
-  }
-
-  /**
-   * Downloads a file from the specified {@code url} to the provided
-   * {@code file}. If the provided {@code file} exists, its lastModified
-   * timestamp is used to specify the {@code If-Modified-Since} header in the
-   * GET request. Content is not downloaded if the file at the specified
-   * {@code url} is not modified.
-   *
-   * @param url The {@code URL} from which to download.
-   * @param file The destination {@code File}.
-   * @return The HTTP response code.
-   * @throws IOException If an I/O error has occurred.
-   */
-  static int downloadFile(final String url, final File file) throws IOException {
-    final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
-    connection.setConnectTimeout(5000);
-    try {
-      connection.setIfModifiedSince(file.lastModified());
-      final int responseCode = connection.getResponseCode();
-      if (responseCode != HttpURLConnection.HTTP_NOT_MODIFIED && responseCode == HttpURLConnection.HTTP_OK) {
-        try (
-          final InputStream in = connection.getInputStream();
-          final FileOutputStream out = new FileOutputStream(file);
-        ) {
-          final byte[] buffer = new byte[BUFFER_SIZE];
-          for (int read; (read = in.read(buffer)) != -1; out.write(buffer, 0, read));
-        }
-      }
-
-      return responseCode;
-    }
-    finally {
-      connection.disconnect();
-    }
   }
 
   private MojoUtil() {

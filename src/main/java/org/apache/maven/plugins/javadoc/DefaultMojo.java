@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -122,11 +123,11 @@ public interface DefaultMojo {
         return;
 
       final List<String> paths = new ArrayList<>();
-      Files.walk(generatedSources.toPath()).filter(Files::isRegularFile).forEach((o) -> {
-        final File file = o.toFile();
-        if (!file.getName().endsWith(".java"))
-          return;
-
+      Files
+        .walk(generatedSources.toPath())
+        .filter(p -> p.getFileName().toString().endsWith(".java"))
+        .map(Path::toFile)
+        .forEach(file -> {
         final String filePath = file.getParentFile().getAbsolutePath();
         for (final String path : paths)
           if (filePath.startsWith(path))
