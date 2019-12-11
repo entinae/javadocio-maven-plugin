@@ -35,6 +35,8 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 final class MojoUtil {
   private static final int BUFFER_SIZE = 4096;
+  private static final int CONNECT_TIMEOUT = 5000;
+  private static final int READ_TIMEOUT = 3000;
 
   /**
    * Downloads a file from the specified {@code url} to the provided
@@ -50,7 +52,8 @@ final class MojoUtil {
    */
   static int downloadFile(final String url, final File file) throws IOException {
     final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
-    connection.setConnectTimeout(5000);
+    connection.setConnectTimeout(CONNECT_TIMEOUT);
+    connection.setReadTimeout(READ_TIMEOUT);
     try {
       connection.setIfModifiedSince(file.lastModified());
       final int responseCode = connection.getResponseCode();
@@ -119,7 +122,11 @@ final class MojoUtil {
 
   static boolean exists(final String url) {
     try {
-      new URL(url).openStream().close();
+      final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
+      connection.setConnectTimeout(CONNECT_TIMEOUT);
+      connection.setReadTimeout(READ_TIMEOUT);
+      connection.connect();
+      connection.disconnect();
       return true;
     }
     catch (final IOException e) {
