@@ -21,7 +21,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.safris.maven</groupId>
   <artifactId>javadocio-maven-plugin</artifactId>
-  <version>0.1.2-SNAPSHOT</version>
+  <version>0.1.2</version>
   <packaging>maven-plugin</packaging>
   <url>https://github.com/safris/javadocio-maven-plugin</url>
   <name>Javadoc.io Maven Plugin</name>
