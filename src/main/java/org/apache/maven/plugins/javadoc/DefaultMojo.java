@@ -58,7 +58,7 @@ public interface DefaultMojo {
       field.setAccessible(true);
       field.set(this, merge(getOfflineLinks(), offlineLinks));
     }
-    catch (final IllegalAccessException | NoSuchFieldException | SecurityException e) {
+    catch (final IllegalAccessException | NoSuchFieldException e) {
       throw new IllegalStateException(e);
     }
   }
@@ -69,7 +69,7 @@ public interface DefaultMojo {
       field.setAccessible(true);
       return (OfflineLink[])field.get(this);
     }
-    catch (final IllegalAccessException | NoSuchFieldException | SecurityException e) {
+    catch (final IllegalAccessException | NoSuchFieldException e) {
       throw new IllegalStateException(e);
     }
   }
@@ -80,7 +80,7 @@ public interface DefaultMojo {
       field.setAccessible(true);
       field.set(this, sourcepaths);
     }
-    catch (final IllegalAccessException | NoSuchFieldException | SecurityException e) {
+    catch (final IllegalAccessException | NoSuchFieldException e) {
       throw new IllegalStateException(e);
     }
   }
@@ -91,7 +91,7 @@ public interface DefaultMojo {
       field.setAccessible(true);
       return (String)field.get(this);
     }
-    catch (final IllegalAccessException | NoSuchFieldException | SecurityException e) {
+    catch (final IllegalAccessException | NoSuchFieldException e) {
       throw new IllegalStateException(e);
     }
   }
