@@ -165,12 +165,12 @@
                   <goal>sign</goal>
                 </goals>
                 <!-- Necessary for GPG v2.2+ -->
-                <!--configuration>
+                <configuration>
                   <gpgArguments>
-                    <arg>- -pinentry-mode</arg>
+                    <arg>--pinentry-mode</arg>
                     <arg>loopback</arg>
                   </gpgArguments>
-                </configuration-->
+                </configuration>
               </execution>
             </executions>
           </plugin>
@@ -240,12 +240,12 @@
     <snapshotRepository>
       <id>sonatype-snapshot</id>
       <name>Sonatype Snapshot Repository</name>
-      <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
     <repository>
       <id>sonatype-staging</id>
       <name>Sonatype Staging Repository</name>
-      <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
     </repository>
   </distributionManagement>
 </project>
