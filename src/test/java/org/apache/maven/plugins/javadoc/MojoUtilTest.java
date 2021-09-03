@@ -18,6 +18,8 @@ package org.apache.maven.plugins.javadoc;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
+
 import org.junit.Test;
 
 public class MojoUtilTest {
@@ -25,5 +27,10 @@ public class MojoUtilTest {
   public void testExists() {
     assertTrue(MojoUtil.exists("https://www.google.com/"));
     assertFalse(MojoUtil.exists("https://www.blablabla328943432.com/"));
+  }
+
+  @Test
+  public void testGetModelUrl() {
+    assertEquals("https://github.com/safris/javadocio-maven-plugin/", MojoUtil.getModelUrl(new File("pom.xml")));
   }
 }
