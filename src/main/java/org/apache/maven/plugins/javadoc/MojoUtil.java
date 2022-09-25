@@ -63,7 +63,7 @@ final class MojoUtil {
           final FileOutputStream out = new FileOutputStream(file);
         ) {
           final byte[] buffer = new byte[BUFFER_SIZE];
-          for (int read; (read = in.read(buffer)) != -1; out.write(buffer, 0, read));
+          for (int read; (read = in.read(buffer)) != -1; out.write(buffer, 0, read)); // [X]
         }
       }
 

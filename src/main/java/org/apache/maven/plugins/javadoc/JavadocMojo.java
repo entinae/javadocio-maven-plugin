@@ -16,6 +16,7 @@
 
 package org.apache.maven.plugins.javadoc;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -88,7 +89,7 @@ public class JavadocMojo extends JavadocReport implements DefaultMojo {
   }
 
   @Override
-  public List<OfflineLink> collectOfflineLinks() throws MojoExecutionException, MojoFailureException {
+  public ArrayList<OfflineLink> collectOfflineLinks() throws MojoExecutionException, MojoFailureException {
     return UnpackDependencies.execute(this, _settings, project, session, _reactorProjects, _archiverManager, _artifactResolver, _dependencyResolver, _repositoryManager, _projectBuilder, _artifactHandlerManager);
   }
 

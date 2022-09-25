@@ -16,7 +16,6 @@
 
 package org.apache.maven.plugins.javadoc;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -37,20 +36,13 @@ public class ReverseExecutor {
       this.project = Objects.requireNonNull(project);
       this.runnable = runnable;
       if (project.hasParent() && project.getParent().getBasedir() != null && project.getBasedir().getAbsolutePath().startsWith(project.getParent().getBasedir().getAbsolutePath())) {
-        try {
-          this.name = project.getBasedir().getAbsolutePath().substring(project.getParent().getBasedir().getAbsolutePath().length() + 1);
-        }
-        catch (final StringIndexOutOfBoundsException e) {
-          final StringIndexOutOfBoundsException exception = new StringIndexOutOfBoundsException(e.getMessage() + ": \"" + project.getBasedir().getAbsolutePath() + "\".substring(\"" + project.getParent().getBasedir().getAbsolutePath() + "\".length() + 1");
-          exception.initCause(e.getCause());
-          throw exception;
-        }
+        this.name = project.getBasedir().getAbsolutePath().substring(project.getParent().getBasedir().getAbsolutePath().length() + 1);
       }
       else {
         this.name = project.getBasedir().getName();
       }
 
-      for (final String module : new ArrayList<>(project.getModules()))
+      for (final String module : project.getModules()) // [L]
         this.modules.put(module, null);
     }
 

@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
@@ -42,11 +41,11 @@ public interface DefaultMojo {
   static OfflineLink[] merge(final OfflineLink[] a, final OfflineLink[] b) {
     final Map<String,OfflineLink> urlToOfflineLink = new LinkedHashMap<>();
     if (a != null)
-      for (final OfflineLink link : a)
+      for (final OfflineLink link : a) // [A]
         urlToOfflineLink.putIfAbsent(link.getUrl(), link);
 
     if (b != null)
-      for (final OfflineLink link : b)
+      for (final OfflineLink link : b) // [A]
         urlToOfflineLink.putIfAbsent(link.getUrl(), link);
 
     return urlToOfflineLink.values().toArray(new OfflineLink[urlToOfflineLink.size()]);
@@ -122,67 +121,67 @@ public interface DefaultMojo {
       if (!generatedSources.exists())
         return;
 
-      final List<String> paths = new ArrayList<>();
+      final ArrayList<String> paths = new ArrayList<>();
       Files
         .walk(generatedSources.toPath())
         .filter(p -> p.getFileName().toString().endsWith(".java"))
         .map(Path::toFile)
         .forEach(file -> {
-        final String filePath = file.getParentFile().getAbsolutePath();
-        for (final String path : paths)
-          if (filePath.startsWith(path))
-            return;
+          final String filePath = file.getParentFile().getAbsolutePath();
+          for (int i = 0, i$ = paths.size(); i < i$; ++i) // [RA]
+            if (filePath.startsWith(paths.get(i)))
+              return;
 
-        boolean inBlockQuote = false;
-        String packageName = null;
-        try (final Scanner scanner = new Scanner(file)) {
-          scanner.useDelimiter("\r|\n");
-          while (scanner.hasNext()) {
-            final String line = scanner.next().trim();
-            if (inBlockQuote) {
-              // Matches a line that has a closing block comment "*/" sequence
-              if (line.matches("^(([^*]|(\\*[^/]))*\\*+/([^/]|(/[^*])|(/$))*)*$"))
-                inBlockQuote = false;
-              else
+          boolean inBlockQuote = false;
+          String packageName = null;
+          try (final Scanner scanner = new Scanner(file)) {
+            scanner.useDelimiter("\r|\n");
+            while (scanner.hasNext()) {
+              final String line = scanner.next().trim();
+              if (inBlockQuote) {
+                // Matches a line that has a closing block comment "*/" sequence
+                if (line.matches("^(([^*]|(\\*[^/]))*\\*+/([^/]|(/[^*])|(/$))*)*$"))
+                  inBlockQuote = false;
+                else
+                  continue;
+              }
+
+              if (line.length() == 0 || line.startsWith("//")) {
                 continue;
-            }
+              }
 
-            if (line.length() == 0 || line.startsWith("//")) {
-              continue;
-            }
+              // Matches a line that has an opening block comment "/*" sequence
+              if (line.matches("^(([^/]|(/[^*]))*/+\\*([^*]|(\\*[^/])|(\\*$))*)*$")) {
+                inBlockQuote = true;
+                continue;
+              }
 
-            // Matches a line that has an opening block comment "/*" sequence
-            if (line.matches("^(([^/]|(/[^*]))*/+\\*([^*]|(\\*[^/])|(\\*$))*)*$")) {
-              inBlockQuote = true;
-              continue;
-            }
+              if (line.startsWith("package ")) {
+                packageName = line.substring(8, line.indexOf(';'));
+                break;
+              }
 
-            if (line.startsWith("package ")) {
-              packageName = line.substring(8, line.indexOf(';'));
-              break;
-            }
-
-            if (line.contains("class ") || line.contains("interface ") || line.contains("@interface ") || line.contains("enum ")) {
-              break;
+              if (line.contains("class ") || line.contains("interface ") || line.contains("@interface ") || line.contains("enum ")) {
+                break;
+              }
             }
           }
-        }
-        catch (final FileNotFoundException e) {
-          throw new IllegalStateException(e);
-        }
+          catch (final FileNotFoundException e) {
+            throw new IllegalStateException(e);
+          }
 
-        if (packageName != null)
-          paths.add(filePath.substring(0, filePath.length() - packageName.length() - 1));
-        else
-          getLog().warn("Could not determine package name of: " + file.getAbsolutePath());
-      });
+          if (packageName != null)
+            paths.add(filePath.substring(0, filePath.length() - packageName.length() - 1));
+          else
+            getLog().warn("Could not determine package name of: " + file.getAbsolutePath());
+        });
 
       if (paths.size() == 0)
         return;
 
       final StringBuilder builder = new StringBuilder();
-      for (final String path : paths)
-        builder.append(':').append(path);
+      for (int i = 0, i$ = paths.size(); i < i$; ++i) // [RA]
+        builder.append(':').append(paths.get(i));
 
       String sourcepaths = getSourcepath();
       if (sourcepaths == null || sourcepaths.length() == 0)
@@ -200,7 +199,7 @@ public interface DefaultMojo {
     reverseExecutor.submit(project, () -> {
       getLog().info("Running " + project.getName() + " " + project.getVersion());
       try {
-        final List<OfflineLink> offlineLinks = collectOfflineLinks();
+        final ArrayList<OfflineLink> offlineLinks = collectOfflineLinks();
         setOfflineLinks(offlineLinks.toArray(new OfflineLink[offlineLinks.size()]));
         if (isAggregator())
           project.setExecutionRoot(true);
@@ -217,5 +216,5 @@ public interface DefaultMojo {
   boolean isAggregator();
   String getApiDocsTargetPath();
   void executeSuperReport(Locale unusedLocale) throws MavenReportException;
-  List<OfflineLink> collectOfflineLinks() throws MojoExecutionException, MojoFailureException;
+  ArrayList<OfflineLink> collectOfflineLinks() throws MojoExecutionException, MojoFailureException;
 }

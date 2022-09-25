@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
@@ -51,8 +50,8 @@ import org.apache.maven.shared.repository.RepositoryManager;
 import org.codehaus.plexus.archiver.manager.ArchiverManager;
 
 class UnpackDependencies extends UnpackDependenciesMojo {
-  private static final Map<Artifact,Set<OfflineLink>> artifactToOfflineLinks = new HashMap<>();
-  private static final Map<Artifact,OfflineLink> artifactToDependencyLink = new HashMap<>();
+  private static final HashMap<Artifact,Set<OfflineLink>> artifactToOfflineLinks = new HashMap<>();
+  private static final HashMap<Artifact,OfflineLink> artifactToDependencyLink = new HashMap<>();
   private static final boolean reportError;
 
   static {
@@ -62,18 +61,20 @@ class UnpackDependencies extends UnpackDependenciesMojo {
     System.setProperty("http.agent", "");
   }
 
-  static List<OfflineLink> execute(final DefaultMojo mojo, final Settings settings, final MavenProject project, final MavenSession session, final List<MavenProject> reactorProjects, final ArchiverManager archiverManager, final ArtifactResolver artifactResolver, final DependencyResolver dependencyResolver, final RepositoryManager repositoryManager, final ProjectBuilder projectBuilder, final ArtifactHandlerManager artifactHandlerManager) throws MojoExecutionException, MojoFailureException {
+  static ArrayList<OfflineLink> execute(final DefaultMojo mojo, final Settings settings, final MavenProject project, final MavenSession session, final List<MavenProject> reactorProjects, final ArchiverManager archiverManager, final ArtifactResolver artifactResolver, final DependencyResolver dependencyResolver, final RepositoryManager repositoryManager, final ProjectBuilder projectBuilder, final ArtifactHandlerManager artifactHandlerManager) throws MojoExecutionException, MojoFailureException {
     final UnpackDependencies unpackDependencies = new UnpackDependencies(mojo, settings, project, session, reactorProjects, archiverManager, artifactResolver, dependencyResolver, repositoryManager, projectBuilder, artifactHandlerManager);
     unpackDependencies.execute();
-    final List<OfflineLink> offlineLinks = new ArrayList<>(unpackDependencies.offlineLinks);
+    final ArrayList<OfflineLink> offlineLinks = new ArrayList<>(unpackDependencies.offlineLinks);
     // Remove the 1st entry, as it is the entry for this project itself
     offlineLinks.remove(0);
     final Log log = mojo.getLog();
     if (log.isDebugEnabled()) {
       log.debug("Detected offline links...");
-      for (final OfflineLink link : offlineLinks)
-        for (final String line : link.toString().split("\n"))
+      for (int i = 0, i$ = offlineLinks.size(); i < i$; ++i) { // [RA]
+        final OfflineLink offlineLink = offlineLinks.get(i);
+        for (final String line : offlineLink.toString().split("\n")) // [A]
           log.debug(line);
+      }
     }
 
     return offlineLinks;
@@ -120,7 +121,7 @@ class UnpackDependencies extends UnpackDependenciesMojo {
 
     if ("pom".equalsIgnoreCase(model.getPackaging())) {
       final Set<OfflineLink> moduleLinks = new LinkedHashSet<>();
-      for (final String module : model.getModules()) {
+      for (final String module : model.getModules()) { // [L]
         final File path = new File(model.getProjectDirectory(), module);
         final Model submodule = getModelArtifact(new File(path, "pom.xml"));
         moduleLinks.addAll(addModules(submodule));
@@ -228,10 +229,10 @@ class UnpackDependencies extends UnpackDependenciesMojo {
   @Override
   protected DependencyStatusSets getDependencySets(final boolean stopOnFailure) throws MojoExecutionException {
     final DependencyStatusSets dependencyStatusSets = super.getDependencySets(stopOnFailure);
-    for (final Artifact artifact : dependencyStatusSets.getUnResolvedDependencies())
+    for (final Artifact artifact : dependencyStatusSets.getUnResolvedDependencies()) // [S]
       addDependency(artifact, false);
 
-    for (final Artifact artifact : dependencyStatusSets.getResolvedDependencies())
+    for (final Artifact artifact : dependencyStatusSets.getResolvedDependencies()) // [S]
       addDependency(artifact, true);
 
     return dependencyStatusSets;
@@ -246,7 +247,7 @@ class UnpackDependencies extends UnpackDependenciesMojo {
   protected void doExecute() throws MojoExecutionException {
     super.doExecute();
     try {
-      for (final OfflineLink offlineLink : offlineLinks)
+      for (final OfflineLink offlineLink : offlineLinks) // [S]
         checkPackageList(offlineLink.getLocation());
     }
     catch (final IOException e) {
