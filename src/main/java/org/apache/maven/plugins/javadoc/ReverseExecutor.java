@@ -17,6 +17,7 @@
 package org.apache.maven.plugins.javadoc;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -35,15 +36,15 @@ public class ReverseExecutor {
     private Module(final MavenProject project, final Runnable runnable) {
       this.project = Objects.requireNonNull(project);
       this.runnable = runnable;
-      if (project.hasParent() && project.getParent().getBasedir() != null && project.getBasedir().getAbsolutePath().startsWith(project.getParent().getBasedir().getAbsolutePath())) {
+      if (project.hasParent() && project.getParent().getBasedir() != null && project.getBasedir().getAbsolutePath().startsWith(project.getParent().getBasedir().getAbsolutePath()))
         this.name = project.getBasedir().getAbsolutePath().substring(project.getParent().getBasedir().getAbsolutePath().length() + 1);
-      }
-      else {
+      else
         this.name = project.getBasedir().getName();
-      }
 
-      for (final String module : project.getModules()) // [L]
-        this.modules.put(module, null);
+      final List<String> modules = project.getModules();
+      if (modules.size() > 0)
+        for (final String module : modules) // [L]
+          this.modules.put(module, null);
     }
 
     private Module() {
@@ -102,7 +103,7 @@ public class ReverseExecutor {
 
     @Override
     public String toString() {
-      return name + ": " + modules.toString();
+      return name + ": " + modules;
     }
   }
 

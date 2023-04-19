@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -120,11 +121,18 @@ class UnpackDependencies extends UnpackDependenciesMojo {
       return links;
 
     if ("pom".equalsIgnoreCase(model.getPackaging())) {
-      final Set<OfflineLink> moduleLinks = new LinkedHashSet<>();
-      for (final String module : model.getModules()) { // [L]
-        final File path = new File(model.getProjectDirectory(), module);
-        final Model submodule = getModelArtifact(new File(path, "pom.xml"));
-        moduleLinks.addAll(addModules(submodule));
+      final List<String> modules = model.getModules();
+      final Set<OfflineLink> moduleLinks;
+      if (modules.size() == 0) {
+        moduleLinks = Collections.EMPTY_SET;
+      }
+      else {
+        moduleLinks = new LinkedHashSet<>();
+        for (final String module : modules) { // [L]
+          final File path = new File(model.getProjectDirectory(), module);
+          final Model submodule = getModelArtifact(new File(path, "pom.xml"));
+          moduleLinks.addAll(addModules(submodule));
+        }
       }
 
       artifactToOfflineLinks.put(artifact, moduleLinks);
@@ -229,11 +237,15 @@ class UnpackDependencies extends UnpackDependenciesMojo {
   @Override
   protected DependencyStatusSets getDependencySets(final boolean stopOnFailure) throws MojoExecutionException {
     final DependencyStatusSets dependencyStatusSets = super.getDependencySets(stopOnFailure);
-    for (final Artifact artifact : dependencyStatusSets.getUnResolvedDependencies()) // [S]
-      addDependency(artifact, false);
+    final Set<Artifact> unResolvedDependencies = dependencyStatusSets.getUnResolvedDependencies();
+    if (unResolvedDependencies.size() > 0)
+      for (final Artifact artifact : unResolvedDependencies) // [S]
+        addDependency(artifact, false);
 
-    for (final Artifact artifact : dependencyStatusSets.getResolvedDependencies()) // [S]
-      addDependency(artifact, true);
+    final Set<Artifact> resolvedDependencies = dependencyStatusSets.getResolvedDependencies();
+    if (resolvedDependencies.size() > 0)
+      for (final Artifact artifact : resolvedDependencies) // [S]
+        addDependency(artifact, true);
 
     return dependencyStatusSets;
   }
@@ -246,12 +258,14 @@ class UnpackDependencies extends UnpackDependenciesMojo {
   @Override
   protected void doExecute() throws MojoExecutionException {
     super.doExecute();
-    try {
-      for (final OfflineLink offlineLink : offlineLinks) // [S]
-        checkPackageList(offlineLink.getLocation());
-    }
-    catch (final IOException e) {
-      throw new MojoExecutionException(e.getMessage(), e);
+    if (offlineLinks.size() > 0) {
+      try {
+        for (final OfflineLink offlineLink : offlineLinks) // [S]
+          checkPackageList(offlineLink.getLocation());
+      }
+      catch (final IOException e) {
+        throw new MojoExecutionException(e.getMessage(), e);
+      }
     }
   }
 }
