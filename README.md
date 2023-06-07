@@ -4,8 +4,8 @@
 
 [![Build Status](https://github.com/entinae/javadocio-maven-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/entinae/javadocio-maven-plugin/actions/workflows/build.yml)
 [![Coverage Status](https://coveralls.io/repos/github/entinae/javadocio-maven-plugin/badge.svg)](https://coveralls.io/github/entinae/javadocio-maven-plugin)
-[![Javadocs](https://www.javadoc.io/badge/org.entinae.maven/javadocio-maven-plugin.svg)](https://www.javadoc.io/doc/org.entinae.maven/javadocio-maven-plugin)
-[![Released Version](https://img.shields.io/maven-central/v/org.entinae.maven/javadocio-maven-plugin.svg)](https://mvnrepository.com/artifact/org.entinae.maven/javadocio-maven-plugin)
+[![Javadocs](https://www.javadoc.io/badge/org.entinae/javadocio-maven-plugin.svg)](https://www.javadoc.io/doc/org.entinae/javadocio-maven-plugin)
+[![Released Version](https://img.shields.io/maven-central/v/org.entinae/javadocio-maven-plugin.svg)](https://mvnrepository.com/artifact/org.entinae/javadocio-maven-plugin)
 
 The JavaDocIO Maven Plugin creates JavaDocs that interlink to [javadoc.io](https://www.javadoc.io).
 
