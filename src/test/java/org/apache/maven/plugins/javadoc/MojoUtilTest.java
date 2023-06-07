@@ -31,6 +31,6 @@ public class MojoUtilTest {
 
   @Test
   public void testGetModelUrl() {
-    assertEquals("https://github.com/safris/javadocio-maven-plugin/", MojoUtil.getModelUrl(new File("pom.xml")));
+    assertEquals("https://github.com/entinae/javadocio-maven-plugin/", MojoUtil.getModelUrl(new File("pom.xml")));
   }
 }
