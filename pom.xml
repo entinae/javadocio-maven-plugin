@@ -21,7 +21,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.entinae</groupId>
   <artifactId>javadocio-maven-plugin</artifactId>
-  <version>0.1.3-SNAPSHOT</version>
+  <version>0.1.3</version>
   <packaging>maven-plugin</packaging>
   <url>https://github.com/entinae/javadocio-maven-plugin</url>
   <name>Javadoc.io Maven Plugin</name>
