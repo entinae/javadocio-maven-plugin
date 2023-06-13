@@ -1,4 +1,4 @@
-/* Copyright (c) 2019 Seva Safris
+/* Copyright (c) 2019 ENTINAE
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,11 +39,9 @@ final class MojoUtil {
   private static final int READ_TIMEOUT = 3000;
 
   /**
-   * Downloads a file from the specified {@code url} to the provided
-   * {@code file}. If the provided {@code file} exists, its lastModified
-   * timestamp is used to specify the {@code If-Modified-Since} header in the
-   * GET request. Content is not downloaded if the file at the specified
-   * {@code url} is not modified.
+   * Downloads a file from the specified {@code url} to the provided {@code file}. If the provided {@code file} exists, its
+   * lastModified timestamp is used to specify the {@code If-Modified-Since} header in the GET request. Content is not downloaded if
+   * the file at the specified {@code url} is not modified.
    *
    * @param url The {@link URL} from which to download.
    * @param file The destination {@link File}.
@@ -51,7 +49,7 @@ final class MojoUtil {
    * @throws IOException If an I/O error has occurred.
    */
   static int downloadFile(final String url, final File file) throws IOException {
-    final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
+    final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection(); // FIXME: This does not follow redirects. See {@link URLConnections#checkFollowRedirect(URLConnection)}.
     connection.setConnectTimeout(CONNECT_TIMEOUT);
     connection.setReadTimeout(READ_TIMEOUT);
     try {
@@ -122,7 +120,7 @@ final class MojoUtil {
 
   static boolean exists(final String url) {
     try {
-      final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
+      final HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection(); // FIXME: This does not follow redirects. See {@link URLConnections#checkFollowRedirect(URLConnection)}.
       connection.setConnectTimeout(CONNECT_TIMEOUT);
       connection.setReadTimeout(READ_TIMEOUT);
       connection.connect();
