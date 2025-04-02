@@ -124,9 +124,9 @@ public interface DefaultMojo {
       final ArrayList<String> paths = new ArrayList<>();
       Files
         .walk(generatedSources.toPath())
-        .filter(p -> p.getFileName().toString().endsWith(".java"))
+        .filter((final Path p) -> p.getFileName().toString().endsWith(".java"))
         .map(Path::toFile)
-        .forEach(file -> {
+        .forEach((final File file) -> {
           final String filePath = file.getParentFile().getAbsolutePath();
           for (int i = 0, i$ = paths.size(); i < i$; ++i) // [RA]
             if (filePath.startsWith(paths.get(i)))

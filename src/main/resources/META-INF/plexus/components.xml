@@ -23,7 +23,7 @@
       <configuration>
         <id>javadocio</id>
         <default-phases>
-          <generate-sources>org.safris.maven:javadocio-maven-plugin:jar</generate-sources>
+          <generate-sources>org.entinae:javadocio-maven-plugin:jar</generate-sources>
         </default-phases>
       </configuration>
     </component>
@@ -37,7 +37,7 @@
           <phase>jar</phase>
         </phases>
         <default-phases>
-          <jar>org.safris.maven:javadocio-maven-plugin:jar</jar>
+          <jar>org.entinae:javadocio-maven-plugin:jar</jar>
         </default-phases>
       </configuration>
     </component>
